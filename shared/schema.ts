@@ -147,3 +147,107 @@ export const insertHeroSlideSchema = createInsertSchema(heroSlides).omit({
 });
 export type InsertHeroSlide = z.infer<typeof insertHeroSlideSchema>;
 export type HeroSlide = typeof heroSlides.$inferSelect;
+
+// Blog posts
+export const blogPosts = pgTable("blog_posts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  excerpt: text("excerpt"),
+  content: text("content"),
+  coverImage: text("cover_image"),
+  category: text("category"),
+  tags: text("tags").array(),
+  author: text("author"),
+  published: boolean("published").default(false),
+  featured: boolean("featured").default(false),
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
+export type BlogPost = typeof blogPosts.$inferSelect;
+
+// Newsletter subscribers
+export const subscribers = pgTable("subscribers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  name: text("name"),
+  status: text("status").default("active"), // 'active', 'unsubscribed'
+  source: text("source"), // where they signed up
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertSubscriberSchema = createInsertSchema(subscribers).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+});
+export type InsertSubscriber = z.infer<typeof insertSubscriberSchema>;
+export type Subscriber = typeof subscribers.$inferSelect;
+
+// Client galleries (password protected)
+export const clientGalleries = pgTable("client_galleries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").references(() => projects.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  password: text("password").notNull(),
+  clientName: text("client_name"),
+  clientEmail: text("client_email"),
+  expiresAt: timestamp("expires_at"),
+  downloadEnabled: boolean("download_enabled").default(true),
+  viewCount: integer("view_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertClientGallerySchema = createInsertSchema(clientGalleries).omit({
+  id: true,
+  viewCount: true,
+  createdAt: true,
+});
+export type InsertClientGallery = z.infer<typeof insertClientGallerySchema>;
+export type ClientGallery = typeof clientGalleries.$inferSelect;
+
+// Booking calendar
+export const bookings = pgTable("bookings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: text("date").notNull(),
+  clientName: text("client_name").notNull(),
+  clientEmail: text("client_email").notNull(),
+  clientPhone: text("client_phone"),
+  eventType: text("event_type"),
+  location: text("location"),
+  notes: text("notes"),
+  status: text("status").default("pending"), // 'pending', 'confirmed', 'completed', 'cancelled'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertBookingSchema = createInsertSchema(bookings).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+});
+export type InsertBooking = z.infer<typeof insertBookingSchema>;
+export type Booking = typeof bookings.$inferSelect;
+
+// Blocked dates for calendar
+export const blockedDates = pgTable("blocked_dates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: text("date").notNull(),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertBlockedDateSchema = createInsertSchema(blockedDates).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertBlockedDate = z.infer<typeof insertBlockedDateSchema>;
+export type BlockedDate = typeof blockedDates.$inferSelect;

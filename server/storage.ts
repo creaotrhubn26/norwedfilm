@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, ne } from "drizzle-orm";
 import {
   projects,
   media,
@@ -8,6 +8,11 @@ import {
   reviews,
   siteSettings,
   heroSlides,
+  blogPosts,
+  subscribers,
+  clientGalleries,
+  bookings,
+  blockedDates,
   type Project,
   type InsertProject,
   type Media,
@@ -22,6 +27,16 @@ import {
   type InsertSetting,
   type HeroSlide,
   type InsertHeroSlide,
+  type BlogPost,
+  type InsertBlogPost,
+  type Subscriber,
+  type InsertSubscriber,
+  type ClientGallery,
+  type InsertClientGallery,
+  type Booking,
+  type InsertBooking,
+  type BlockedDate,
+  type InsertBlockedDate,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -295,6 +310,9 @@ class DatabaseStorage implements IStorage {
     const [newContactCount] = await db.select({ count: sql<number>`count(*)::int` })
       .from(contacts)
       .where(eq(contacts.status, "new"));
+    const [blogCount] = await db.select({ count: sql<number>`count(*)::int` }).from(blogPosts);
+    const [subscriberCount] = await db.select({ count: sql<number>`count(*)::int` }).from(subscribers);
+    const [bookingCount] = await db.select({ count: sql<number>`count(*)::int` }).from(bookings);
 
     return {
       projects: projectCount?.count || 0,
@@ -302,7 +320,164 @@ class DatabaseStorage implements IStorage {
       contacts: contactCount?.count || 0,
       reviews: reviewCount?.count || 0,
       newContacts: newContactCount?.count || 0,
+      blogPosts: blogCount?.count || 0,
+      subscribers: subscriberCount?.count || 0,
+      bookings: bookingCount?.count || 0,
     };
+  }
+
+  // Blog Posts
+  async getBlogPosts(): Promise<BlogPost[]> {
+    return db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
+  }
+
+  async getPublishedBlogPosts(): Promise<BlogPost[]> {
+    return db.select().from(blogPosts)
+      .where(eq(blogPosts.published, true))
+      .orderBy(desc(blogPosts.publishedAt));
+  }
+
+  async getBlogPostBySlug(slug: string): Promise<BlogPost | undefined> {
+    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.slug, slug));
+    return post;
+  }
+
+  async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
+    const [created] = await db.insert(blogPosts).values(post).returning();
+    return created;
+  }
+
+  async updateBlogPost(id: string, post: Partial<InsertBlogPost>): Promise<BlogPost | undefined> {
+    const [updated] = await db.update(blogPosts)
+      .set({ ...post, updatedAt: new Date() })
+      .where(eq(blogPosts.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteBlogPost(id: string): Promise<void> {
+    await db.delete(blogPosts).where(eq(blogPosts.id, id));
+  }
+
+  // Subscribers
+  async getSubscribers(): Promise<Subscriber[]> {
+    return db.select().from(subscribers).orderBy(desc(subscribers.createdAt));
+  }
+
+  async getActiveSubscribers(): Promise<Subscriber[]> {
+    return db.select().from(subscribers)
+      .where(eq(subscribers.status, "active"))
+      .orderBy(desc(subscribers.createdAt));
+  }
+
+  async createSubscriber(subscriber: InsertSubscriber): Promise<Subscriber> {
+    const [created] = await db.insert(subscribers).values(subscriber).returning();
+    return created;
+  }
+
+  async updateSubscriberStatus(id: string, status: string): Promise<Subscriber | undefined> {
+    const [updated] = await db.update(subscribers)
+      .set({ status })
+      .where(eq(subscribers.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteSubscriber(id: string): Promise<void> {
+    await db.delete(subscribers).where(eq(subscribers.id, id));
+  }
+
+  // Client Galleries
+  async getClientGalleries(): Promise<ClientGallery[]> {
+    return db.select().from(clientGalleries).orderBy(desc(clientGalleries.createdAt));
+  }
+
+  async getClientGalleryBySlug(slug: string): Promise<ClientGallery | undefined> {
+    const [gallery] = await db.select().from(clientGalleries).where(eq(clientGalleries.slug, slug));
+    return gallery;
+  }
+
+  async createClientGallery(gallery: InsertClientGallery): Promise<ClientGallery> {
+    const [created] = await db.insert(clientGalleries).values(gallery).returning();
+    return created;
+  }
+
+  async updateClientGallery(id: string, gallery: Partial<InsertClientGallery>): Promise<ClientGallery | undefined> {
+    const [updated] = await db.update(clientGalleries)
+      .set(gallery)
+      .where(eq(clientGalleries.id, id))
+      .returning();
+    return updated;
+  }
+
+  async incrementGalleryViewCount(id: string): Promise<void> {
+    await db.execute(sql`UPDATE client_galleries SET view_count = view_count + 1 WHERE id = ${id}`);
+  }
+
+  async deleteClientGallery(id: string): Promise<void> {
+    await db.delete(clientGalleries).where(eq(clientGalleries.id, id));
+  }
+
+  // Bookings
+  async getBookings(): Promise<Booking[]> {
+    return db.select().from(bookings).orderBy(desc(bookings.createdAt));
+  }
+
+  async getBookingsByStatus(status: string): Promise<Booking[]> {
+    return db.select().from(bookings)
+      .where(eq(bookings.status, status))
+      .orderBy(desc(bookings.createdAt));
+  }
+
+  async getBookedDates(): Promise<string[]> {
+    const result = await db.select({ date: bookings.date })
+      .from(bookings)
+      .where(ne(bookings.status, "cancelled"));
+    return result.map(r => r.date);
+  }
+
+  async createBooking(booking: InsertBooking): Promise<Booking> {
+    const [created] = await db.insert(bookings).values(booking).returning();
+    return created;
+  }
+
+  async updateBookingStatus(id: string, status: string): Promise<Booking | undefined> {
+    const [updated] = await db.update(bookings)
+      .set({ status })
+      .where(eq(bookings.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteBooking(id: string): Promise<void> {
+    await db.delete(bookings).where(eq(bookings.id, id));
+  }
+
+  // Blocked Dates
+  async getBlockedDates(): Promise<BlockedDate[]> {
+    return db.select().from(blockedDates).orderBy(blockedDates.date);
+  }
+
+  async createBlockedDate(blocked: InsertBlockedDate): Promise<BlockedDate> {
+    const [created] = await db.insert(blockedDates).values(blocked).returning();
+    return created;
+  }
+
+  async deleteBlockedDate(id: string): Promise<void> {
+    await db.delete(blockedDates).where(eq(blockedDates.id, id));
+  }
+
+  // Update sort order for items
+  async updateSortOrder(table: string, items: { id: string; sortOrder: number }[]): Promise<void> {
+    for (const item of items) {
+      if (table === "projects") {
+        await db.update(projects).set({ sortOrder: item.sortOrder }).where(eq(projects.id, item.id));
+      } else if (table === "media") {
+        await db.update(media).set({ sortOrder: item.sortOrder }).where(eq(media.id, item.id));
+      } else if (table === "heroSlides") {
+        await db.update(heroSlides).set({ sortOrder: item.sortOrder }).where(eq(heroSlides.id, item.id));
+      }
+    }
   }
 }
 
