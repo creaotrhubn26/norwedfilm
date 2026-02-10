@@ -10,95 +10,96 @@ import {
   Users,
   Calendar,
   MessageSquare,
-  Camera,
+  Building2,
   Eye,
   ClipboardList,
-  Utensils,
   ArrowRight,
   Film,
   AlertCircle,
   Truck,
   Sparkles,
+  Handshake,
+  Globe,
 } from "lucide-react";
 
 const features = [
   {
-    icon: Camera,
-    title: "Photo Plan & Shot List",
+    icon: Handshake,
+    title: "Matching & Booking",
     description:
-      "The feature only a photographer could build. Organize must-have shots, group portraits, and share your visual plan directly with your photographer.",
-  },
-  {
-    icon: Utensils,
-    title: "Interactive Seating Charts",
-    description:
-      "Drag-and-drop table planner with relationship mapping and dietary needs. Visualize your reception layout the way we visualize a scene.",
+      "Koble riktig leverandør med riktig kunde – basert på type arrangement, lokasjon, kapasitet og preferanser. Ingen manuelle tilbudsrunder.",
   },
   {
     icon: Calendar,
-    title: "Day-of Minute Timeline",
+    title: "Koordinert Tidslinje",
     description:
-      "A second-by-second wedding-day schedule — built the way a film crew plans a shoot. Share it live with your coordinator and every vendor.",
+      "En felles tidslinje for alle involverte – fra oppsett til nedrigg. Dele live med koordinatorer og leverandører.",
   },
   {
     icon: Truck,
-    title: "Vendor Deliveries",
+    title: "Leveransesporing",
     description:
-      "Track what every vendor is delivering, when it arrives, and who's responsible. No more wondering where the flowers are.",
+      "Spor hva hver leverandør leverer, når det ankommer, og hvem som har ansvar. Slutt på kaos og ubesvarte e-poster.",
   },
   {
     icon: ClipboardList,
-    title: "Task & Milestone Tracker",
+    title: "Oppgaver & Milepæler",
     description:
-      "Visual progress through your wedding journey. Milestones, deadlines, and reminders built around real Scandinavian wedding timelines.",
+      "Visuell fremdrift gjennom hele planleggingsprosessen. Milepæler, frister og påminnelser tilpasset ditt arrangement.",
   },
   {
-    icon: Eye,
-    title: "Couple Profile & Story",
+    icon: Building2,
+    title: "Venues & Lokaler",
     description:
-      "Share your love story, cultural traditions, and style preferences — so every vendor understands your vision before the first meeting.",
+      "Finn og sammenlign venues basert på kapasitet, beliggenhet og fasiliteter. Perfekt for bryllup, konferanser og firmafester.",
   },
   {
     icon: MessageSquare,
-    title: "Vendor Conversations",
+    title: "Meldinger & Dialog",
     description:
-      "Threaded messaging with every vendor, organized by wedding. No more lost emails, no more scattered WhatsApp threads.",
+      "Trådbaserte samtaler med alle leverandører, organisert per arrangement. Ingen tapte e-poster, ingen rotete chat-grupper.",
+  },
+  {
+    icon: Eye,
+    title: "Profil & Ønskeliste",
+    description:
+      "Del din visjon, preferanser og krav – slik at leverandørene forstår behovet ditt før første møte.",
   },
   {
     icon: Sparkles,
-    title: "Cultural Traditions",
+    title: "Skreddersydd Matching",
     description:
-      "Built-in support for Norwegian and Scandinavian wedding traditions — from brudevals to kransekake. Honour your heritage naturally.",
+      "Intelligent matching basert på arrangementtype, budsjett og stil. Fra bryllup til bedriftseventer – riktig leverandør til riktig jobb.",
   },
 ];
 
-export default function WedflowPage() {
+export default function EvendiPage() {
   return (
     <PublicLayout>
       <div className="pt-28 pb-20">
         {/* Hero Section */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-20 md:mb-28">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/50 text-sm font-medium text-foreground mb-6">
-            <Film className="w-4 h-4" />
-            From the Lens to the Platform
+            <Globe className="w-4 h-4" />
+            Norwedfilm er samarbeidspartner med Evendi
           </div>
           <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-light mb-6">
-            Wedflow
+            Evendi
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl max-w-3xl mx-auto leading-relaxed mb-4">
-            The wedding platform built by people who've actually been at 200+
-            weddings. Not from a tech office — from behind the camera, in the
-            rain, at midnight, cutting the cake.
+            Evendi kobler bedrifter, venues og leverandører i ett samlet
+            økosystem. Plattformen muliggjør matching, booking, kontrakt og
+            koordinering.
           </p>
           <p className="text-muted-foreground/80 text-base max-w-2xl mx-auto leading-relaxed mb-8">
-            Wedflow is born from Norwedfilm's first-hand experience of what
-            couples and vendors really need on the ground — not what a
-            checklist generator thinks they need.
+            Vi reduserer friksjon, manuell e-post og uoversiktlige
+            tilbudsrunder. Evendi gjør event-gjennomføring like enkel som å
+            bestille mat eller overnatting.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/contact">
-              <Button size="lg" className="min-w-[200px]" data-testid="button-wedflow-contact">
-                Get Early Access
+              <Button size="lg" className="min-w-[200px]" data-testid="button-evendi-contact">
+                Kom i gang
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
@@ -107,9 +108,9 @@ export default function WedflowPage() {
                 variant="outline"
                 size="lg"
                 className="min-w-[200px]"
-                data-testid="button-wedflow-vision"
+                data-testid="button-evendi-vision"
               >
-                Our Vision
+                Vår visjon
               </Button>
             </a>
           </div>
@@ -124,11 +125,11 @@ export default function WedflowPage() {
             <div className="inline-flex items-center gap-2 mb-4">
               <Target className="w-6 h-6 text-foreground" />
               <h2 className="font-serif text-3xl md:text-4xl font-light">
-                The Wedflow Vision
+                Evendi-visjonen
               </h2>
             </div>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Inspired by Simon Sinek's Golden Circle — we start with WHY.
+              Inspirert av Simon Sineks Golden Circle — vi starter med HVORFOR.
             </p>
           </div>
 
@@ -137,20 +138,19 @@ export default function WedflowPage() {
             <Card className="p-6 md:p-8 border-amber-400/40 bg-amber-50/50 dark:bg-amber-950/20">
               <div className="flex items-center gap-3 mb-4">
                 <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-400 text-white font-bold text-sm">
-                  WHY
+                  HVORFOR
                 </span>
                 <h3 className="font-serif text-xl md:text-2xl font-light text-amber-700 dark:text-amber-400">
-                  Why we exist
+                  Hvorfor vi finnes
                 </h3>
               </div>
               <p className="text-foreground/90 leading-relaxed">
-                After filming 200+ weddings we kept seeing the same thing:
-                couples drowning in spreadsheets instead of enjoying the
-                engagement, vendors missing moments because logistics fell
-                apart, and beautiful days undermined by avoidable chaos. We
-                exist because we refuse to keep watching that happen — the
-                journey to "I do" should feel as extraordinary as the day
-                itself.
+                Etter å ha filmet 200+ bryllup og arrangementer så vi det
+                samme igjen og igjen: arrangører druknet i regneark,
+                leverandører mistet oversikten fordi logistikken sviktet, og
+                flotte arrangementer ble undergravd av unødvendig kaos.
+                Evendi finnes fordi vi nekter å se dette skje — veien til
+                et vellykket arrangement skal være like god som selve dagen.
               </p>
             </Card>
 
@@ -158,20 +158,19 @@ export default function WedflowPage() {
             <Card className="p-6 md:p-8 border-primary/30 bg-primary/5">
               <div className="flex items-center gap-3 mb-4">
                 <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground font-bold text-sm">
-                  HOW
+                  HVORDAN
                 </span>
                 <h3 className="font-serif text-xl md:text-2xl font-light text-primary">
-                  How we do it
+                  Hvordan vi gjør det
                 </h3>
               </div>
               <p className="text-foreground/90 leading-relaxed">
-                By channeling everything we've learned behind the lens into
-                purpose-built tools: a visual day-of timeline designed like a
-                shoot schedule, a photo plan only a photographer would think
-                to include, interactive seating charts, vendor delivery
-                tracking, and threaded conversations that replace the chaos of
-                scattered messages. Every feature exists because we saw the
-                need in person — not on a whiteboard.
+                Ved å samle alt vi har lært bak kamera og på hundrevis av
+                arrangementer i smarte, formålsbyggede verktøy: matching av
+                leverandører og venues, felles tidslinje for alle involverte,
+                leveransesporing, trådbaserte samtaler og kontrakt-håndtering.
+                Hvert verktøy finnes fordi vi har sett behovet i praksis —
+                ikke på et whiteboard.
               </p>
             </Card>
 
@@ -179,20 +178,20 @@ export default function WedflowPage() {
             <Card className="p-6 md:p-8 border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20">
               <div className="flex items-center gap-3 mb-4">
                 <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500 text-white font-bold text-sm">
-                  WHAT
+                  HVA
                 </span>
                 <h3 className="font-serif text-xl md:text-2xl font-light text-emerald-600 dark:text-emerald-400">
-                  What we offer
+                  Hva vi tilbyr
                 </h3>
               </div>
               <p className="text-foreground/90 leading-relaxed">
-                Wedflow is a wedding ecosystem — a mobile-first platform where
-                couples craft their wedding through cinematic-quality planning
-                tools (photo plans, seating charts, day-of timelines, vendor
-                deliveries, cultural traditions), while a curated community of
-                Scandinavian vendors connects with the right couples through
-                rich profiles and direct conversation. Built with
-                Scandinavian craft, designed for Scandinavian weddings.
+                Evendi er et komplett økosystem for arrangementer — en
+                plattform der bedrifter og privatpersoner planlegger alt fra
+                bryllup til konferanser, firmafester og seminarer. Et
+                kuratert nettverk av leverandører, venues og tjenester
+                kobles sammen gjennom matching, booking og koordinering.
+                Bygget med skandinavisk kvalitet, designet for alle typer
+                arrangementer.
               </p>
             </Card>
           </div>
@@ -212,11 +211,12 @@ export default function WedflowPage() {
               <div className="inline-flex items-center gap-2 mb-4">
                 <Film className="w-6 h-6 text-foreground" />
                 <h2 className="font-serif text-3xl md:text-4xl font-light">
-                  Born Behind the Camera
+                  Født bak kamera
                 </h2>
               </div>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                "Love stories elegantly told" — Norwedfilm
+                "Love stories elegantly told" — Norwedfilm er
+                samarbeidspartner med Evendi
               </p>
             </div>
 
@@ -225,26 +225,26 @@ export default function WedflowPage() {
               <Card className="p-6 bg-background border-border">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                    <Camera className="w-5 h-5 text-primary-foreground" />
+                    <Film className="w-5 h-5 text-primary-foreground" />
                   </div>
-                  <h3 className="font-medium">Who is Norwedfilm?</h3>
+                  <h3 className="font-medium">Hvem er Norwedfilm?</h3>
                 </div>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Norwedfilm is a wedding photography & videography studio
-                  based in Oslo. Over 8+ years and 200+ weddings, we've
-                  specialized in timeless photography and cinematic wedding
-                  films — capturing authentic moments with an artistic eye and
-                  telling love stories with emotion and elegance.
+                  Norwedfilm er et bryllupsfoto- og videostudio basert i Oslo.
+                  Gjennom 8+ år og 200+ bryllup har vi spesialisert oss på
+                  tidløs fotografi og cinematiske bryllupsfilmer — vi fanger
+                  autentiske øyeblikk med et kunstnerisk blikk og forteller
+                  kjærlighetshistorier med følelse og eleganse.
                 </p>
                 <div className="flex items-center gap-8 mt-6 pt-4 border-t border-border">
                   <div>
                     <div className="text-2xl font-serif font-light">200+</div>
-                    <p className="text-xs text-muted-foreground">Weddings Filmed</p>
+                    <p className="text-xs text-muted-foreground">Bryllup filmet</p>
                   </div>
                   <div>
                     <div className="text-2xl font-serif font-light">8+</div>
                     <p className="text-xs text-muted-foreground">
-                      Years on Set
+                      År med erfaring
                     </p>
                   </div>
                 </div>
@@ -256,16 +256,16 @@ export default function WedflowPage() {
                   <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center">
                     <AlertCircle className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="font-medium">What We Witnessed</h3>
+                  <h3 className="font-medium">Hva vi så fra sidelinjen</h3>
                 </div>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Standing behind the camera at hundreds of weddings, we
-                  witnessed the same story: the florist arriving late because
-                  nobody shared the timeline, the couple panicking over
-                  seating 15 minutes before doors opened, the photographer
-                  missing the grandfather's speech because no one had a shot
-                  list. These aren't tech problems — they're human coordination
-                  problems. And no generic app was solving them.
+                  Bak kameraet på hundrevis av arrangementer så vi det samme:
+                  blomsterdekoratøren som kom for sent fordi ingen delte
+                  tidsplanen, paret som panikkerte over bordplassering 15
+                  minutter før dørene åpnet, fotografen som gikk glipp av
+                  bestefars tale fordi ingen hadde en fotoplan. Dette er ikke
+                  teknologiproblemer — det er koordineringsproblemer mellom
+                  mennesker.
                 </p>
               </Card>
 
@@ -275,15 +275,15 @@ export default function WedflowPage() {
                   <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
                     <Heart className="w-5 h-5 text-primary-foreground" />
                   </div>
-                  <h3 className="font-medium">Craft Over Algorithms</h3>
+                  <h3 className="font-medium">Håndverk over algoritmer</h3>
                 </div>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  We don't believe a wedding can be optimized by an algorithm.
-                  Weddings are deeply personal — shaped by culture, family,
-                  and story. Our approach is to give couples and vendors the
-                  right visual tools for personal connection and creative
-                  coordination, not to automate the human decisions that make
-                  each wedding unique.
+                  Vi tror ikke et arrangement kan optimaliseres av en
+                  algoritme. Arrangementer er dypt personlige — formet av
+                  kultur, folk og visjon. Vår tilnærming er å gi arrangører
+                  og leverandører de rette verktøyene for samarbeid og
+                  koordinering, ikke å automatisere de menneskelige
+                  beslutningene som gjør hvert arrangement unikt.
                 </p>
               </Card>
 
@@ -294,17 +294,16 @@ export default function WedflowPage() {
                     <Zap className="w-5 h-5 text-white" />
                   </div>
                   <h3 className="font-medium text-emerald-700 dark:text-emerald-400">
-                    The Solution: Wedflow
+                    Løsningen: Evendi
                   </h3>
                 </div>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  That's why we built Wedflow — the platform we wished existed
-                  when we were the ones on set watching things fall apart. A
-                  wedding ecosystem that solves the real-world coordination
-                  problems we witnessed first-hand: photo planning, day-of
-                  timing, vendor deliveries, seating, and cultural
-                  traditions — designed with Scandinavian craft for
-                  Scandinavian weddings.
+                  Derfor bygde vi Evendi — plattformen vi ønsket fantes da vi
+                  selv stod på settet og så ting falle fra hverandre. Et
+                  komplett økosystem som løser de virkelige
+                  koordineringsproblemene vi opplevde: matching, booking,
+                  tidslinje, leveranser og kontrakter — designet for alle
+                  typer arrangementer.
                 </p>
               </Card>
             </div>
@@ -315,11 +314,11 @@ export default function WedflowPage() {
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20 md:mb-28">
           <div className="text-center mb-12 md:mb-16">
             <h2 className="font-serif text-3xl md:text-4xl font-light mb-4">
-              Tools Born from Real Weddings
+              Verktøy født fra virkelige arrangementer
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Every feature exists because we saw the need first-hand — at the
-              venue, behind the camera, at 2 AM editing timelines.
+              Hvert verktøy finnes fordi vi så behovet førstehånds — på venue,
+              bak kamera, klokken to om natten mens vi redigerte tidsplaner.
             </p>
           </div>
 
@@ -342,28 +341,28 @@ export default function WedflowPage() {
           </div>
         </section>
 
-        {/* For Vendors — differentiated from WedMind's "CMS portal" positioning */}
+        {/* For Vendors */}
         <section className="bg-card py-20 md:py-28 mb-20 md:mb-28">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
               <div>
                 <h2 className="font-serif text-3xl md:text-4xl font-light mb-6">
-                  A Curated Vendor Community
+                  Et kuratert leverandørnettverk
                 </h2>
                 <p className="text-muted-foreground leading-relaxed mb-8">
-                  Wedflow is not a directory where anyone uploads a profile.
-                  As wedding professionals ourselves, we've built a curated
-                  community of Scandinavian vendors who share our commitment
-                  to craft. You connect with couples through storytelling, not
-                  keyword bidding.
+                  Evendi er ikke en katalog der hvem som helst laster opp en
+                  profil. Vi bygger et kuratert nettverk av leverandører og
+                  venues som deler vår forpliktelse til kvalitet. Du kobles
+                  med rette kunder gjennom matching — ikke gjennom
+                  søkeordbudgivning.
                 </p>
                 <ul className="space-y-4">
                   {[
-                    "Tell your story with a rich portfolio & visual profile",
-                    "Receive inquiries from couples who already know your style",
-                    "Coordinate deliveries and day-of logistics through shared timelines",
-                    "Threaded conversations — no lost emails or chat groups",
-                    "Grow organically through reviews and couple referrals",
+                    "Vis frem ditt arbeid med en rik portefølje og visuell profil",
+                    "Motta henvendelser fra kunder som matcher dine tjenester",
+                    "Koordiner leveranser og logistikk gjennom delte tidslinjer",
+                    "Trådbaserte samtaler — ingen tapte e-poster eller chat-grupper",
+                    "Voks gjennom anmeldelser og kundehenvisninger",
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3">
                       <CheckCircle className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
@@ -377,7 +376,7 @@ export default function WedflowPage() {
               <div className="aspect-square rounded-md overflow-hidden bg-muted">
                 <div className="w-full h-full bg-gradient-to-br from-accent to-muted flex items-center justify-center">
                   <span className="font-serif text-4xl text-muted-foreground/30">
-                    Vendor
+                    Leverandør
                   </span>
                 </div>
               </div>
@@ -388,18 +387,18 @@ export default function WedflowPage() {
         {/* CTA Section */}
         <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="font-serif text-3xl md:text-4xl font-light mb-6">
-            Built by Wedding Professionals,<br />for Wedding Professionals
+            Bygget av arrangementsproffene,<br />for arrangementsproffene
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
-            Wedflow isn't another planning checklist — it's the wedding
-            ecosystem that Norwedfilm spent 8 years wishing existed. For
-            couples who want to craft a meaningful day, and for vendors who
-            take pride in their craft.
+            Evendi er ikke nok en sjekkliste — det er det komplette
+            økosystemet som Norwedfilm brukte 8 år på å ønske seg. For
+            arrangører som vil skape noe meningsfylt, og for leverandører
+            som er stolte av sitt håndverk.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/contact">
-              <Button size="lg" className="min-w-[200px]" data-testid="button-wedflow-cta">
-                Contact Us
+              <Button size="lg" className="min-w-[200px]" data-testid="button-evendi-cta">
+                Kontakt oss
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
@@ -408,9 +407,9 @@ export default function WedflowPage() {
                 variant="outline"
                 size="lg"
                 className="min-w-[200px]"
-                data-testid="button-wedflow-about"
+                data-testid="button-evendi-about"
               >
-                About Norwedfilm
+                Om Norwedfilm
               </Button>
             </Link>
           </div>

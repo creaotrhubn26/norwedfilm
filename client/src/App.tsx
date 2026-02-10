@@ -12,7 +12,7 @@ import PortfolioPage from "@/pages/portfolio";
 import ContactPage from "@/pages/contact";
 import ReviewsPage from "@/pages/reviews";
 import ProjectPage from "@/pages/project";
-import WedflowPage from "@/pages/wedflow";
+import EvendiPage from "@/pages/evendi";
 
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminProjects from "@/pages/admin/projects";
@@ -35,7 +35,7 @@ function Router() {
       <Route path="/portfolio/:category" component={PortfolioPage} />
       <Route path="/contact" component={ContactPage} />
       <Route path="/reviews" component={ReviewsPage} />
-      <Route path="/wedflow" component={WedflowPage} />
+      <Route path="/evendi" component={EvendiPage} />
       <Route path="/project/:slug" component={ProjectPage} />
       
       <Route path="/admin" component={AdminDashboard} />

@@ -75,9 +75,9 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/wedflow">
-                  <span className="text-muted-foreground hover:text-foreground text-sm cursor-pointer transition-colors" data-testid="footer-link-wedflow">
-                    Wedflow
+                <Link href="/evendi">
+                  <span className="text-muted-foreground hover:text-foreground text-sm cursor-pointer transition-colors" data-testid="footer-link-evendi">
+                    Evendi
                   </span>
                 </Link>
               </li>

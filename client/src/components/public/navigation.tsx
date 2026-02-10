@@ -21,7 +21,7 @@ const navLinks = [
     ],
   },
   { href: "/reviews", label: "Reviews" },
-  { href: "/wedflow", label: "Wedflow" },
+  { href: "/evendi", label: "Evendi" },
   { href: "/contact", label: "Contact" },
 ];
 
