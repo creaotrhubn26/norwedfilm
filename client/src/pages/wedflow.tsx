@@ -11,63 +11,64 @@ import {
   Calendar,
   MessageSquare,
   Camera,
-  CreditCard,
+  Eye,
   ClipboardList,
   Utensils,
   ArrowRight,
-  Smartphone,
   Film,
   AlertCircle,
+  Truck,
+  Sparkles,
 } from "lucide-react";
 
 const features = [
   {
-    icon: ClipboardList,
-    title: "Planning & Timeline",
+    icon: Camera,
+    title: "Photo Plan & Shot List",
     description:
-      "Build your wedding timeline step by step. Never miss a deadline with smart reminders and task management.",
-  },
-  {
-    icon: CreditCard,
-    title: "Budget Management",
-    description:
-      "Track every expense, set category budgets, and stay in control of your wedding finances with real-time overview.",
-  },
-  {
-    icon: Users,
-    title: "Guest Management",
-    description:
-      "RSVP tracking, dietary preferences, seating assignments, and guest communication — all in one place.",
+      "The feature only a photographer could build. Organize must-have shots, group portraits, and share your visual plan directly with your photographer.",
   },
   {
     icon: Utensils,
-    title: "Seating Charts",
+    title: "Interactive Seating Charts",
     description:
-      "Interactive table planner with drag-and-drop seating. See guest relationships and dietary needs at a glance.",
+      "Drag-and-drop table planner with relationship mapping and dietary needs. Visualize your reception layout the way we visualize a scene.",
   },
   {
     icon: Calendar,
-    title: "Day-of Timeline",
+    title: "Day-of Minute Timeline",
     description:
-      "Minute-by-minute schedule for your wedding day. Share with your coordinator and vendors instantly.",
+      "A second-by-second wedding-day schedule — built the way a film crew plans a shoot. Share it live with your coordinator and every vendor.",
   },
   {
-    icon: Camera,
-    title: "Photo Plan",
+    icon: Truck,
+    title: "Vendor Deliveries",
     description:
-      "Create your must-have shot list, organize group photos, and share the plan with your photographer.",
+      "Track what every vendor is delivering, when it arrives, and who's responsible. No more wondering where the flowers are.",
+  },
+  {
+    icon: ClipboardList,
+    title: "Task & Milestone Tracker",
+    description:
+      "Visual progress through your wedding journey. Milestones, deadlines, and reminders built around real Scandinavian wedding timelines.",
+  },
+  {
+    icon: Eye,
+    title: "Couple Profile & Story",
+    description:
+      "Share your love story, cultural traditions, and style preferences — so every vendor understands your vision before the first meeting.",
   },
   {
     icon: MessageSquare,
-    title: "Vendor Messaging",
+    title: "Vendor Conversations",
     description:
-      "Direct chat with your vendors in-app. Keep all wedding communication organized and accessible.",
+      "Threaded messaging with every vendor, organized by wedding. No more lost emails, no more scattered WhatsApp threads.",
   },
   {
-    icon: Smartphone,
-    title: "Mobile First",
+    icon: Sparkles,
+    title: "Cultural Traditions",
     description:
-      "Designed for your phone. Plan your wedding anywhere — on the couch, at lunch, or on the go.",
+      "Built-in support for Norwegian and Scandinavian wedding traditions — from brudevals to kransekake. Honour your heritage naturally.",
   },
 ];
 
@@ -78,16 +79,21 @@ export default function WedflowPage() {
         {/* Hero Section */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-20 md:mb-28">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/50 text-sm font-medium text-foreground mb-6">
-            <Heart className="w-4 h-4" />
-            Built by Norwedfilm
+            <Film className="w-4 h-4" />
+            From the Lens to the Platform
           </div>
           <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-light mb-6">
-            Meet Wedflow
+            Wedflow
           </h1>
-          <p className="text-muted-foreground text-lg md:text-xl max-w-3xl mx-auto leading-relaxed mb-8">
-            The complete wedding platform — where couples plan their dream
-            wedding and vendors reach the right couples. Born from 200+
-            weddings and 8+ years behind the lens at Norwedfilm.
+          <p className="text-muted-foreground text-lg md:text-xl max-w-3xl mx-auto leading-relaxed mb-4">
+            The wedding platform built by people who've actually been at 200+
+            weddings. Not from a tech office — from behind the camera, in the
+            rain, at midnight, cutting the cake.
+          </p>
+          <p className="text-muted-foreground/80 text-base max-w-2xl mx-auto leading-relaxed mb-8">
+            Wedflow is born from Norwedfilm's first-hand experience of what
+            couples and vendors really need on the ground — not what a
+            checklist generator thinks they need.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/contact">
@@ -138,11 +144,13 @@ export default function WedflowPage() {
                 </h3>
               </div>
               <p className="text-foreground/90 leading-relaxed">
-                We believe wedding planning should be one of the most magical
-                experiences in life — not a source of stress and chaos. Every
-                couple deserves to enjoy the journey to their big day, and
-                every vendor deserves to work with engaged couples who value
-                their craft.
+                After filming 200+ weddings we kept seeing the same thing:
+                couples drowning in spreadsheets instead of enjoying the
+                engagement, vendors missing moments because logistics fell
+                apart, and beautiful days undermined by avoidable chaos. We
+                exist because we refuse to keep watching that happen — the
+                journey to "I do" should feel as extraordinary as the day
+                itself.
               </p>
             </Card>
 
@@ -157,11 +165,13 @@ export default function WedflowPage() {
                 </h3>
               </div>
               <p className="text-foreground/90 leading-relaxed">
-                We connect couples with the best vendors through smart
-                technology, seamless communication and tools that simplify
-                everything — from budget management and guest handling to
-                timeline, seating charts and deliveries. All gathered in one
-                place, accessible from your phone.
+                By channeling everything we've learned behind the lens into
+                purpose-built tools: a visual day-of timeline designed like a
+                shoot schedule, a photo plan only a photographer would think
+                to include, interactive seating charts, vendor delivery
+                tracking, and threaded conversations that replace the chaos of
+                scattered messages. Every feature exists because we saw the
+                need in person — not on a whiteboard.
               </p>
             </Card>
 
@@ -176,12 +186,13 @@ export default function WedflowPage() {
                 </h3>
               </div>
               <p className="text-foreground/90 leading-relaxed">
-                Wedflow is a complete wedding platform — an app where couples
-                plan their wedding with powerful tools (planning, budget,
-                guests, seating charts, timeline, photo plan, messaging),
-                while vendors reach the right couples through a marketplace
-                with profiles, offers, products and direct chat. All in one
-                app.
+                Wedflow is a wedding ecosystem — a mobile-first platform where
+                couples craft their wedding through cinematic-quality planning
+                tools (photo plans, seating charts, day-of timelines, vendor
+                deliveries, cultural traditions), while a curated community of
+                Scandinavian vendors connects with the right couples through
+                rich profiles and direct conversation. Built with
+                Scandinavian craft, designed for Scandinavian weddings.
               </p>
             </Card>
           </div>
@@ -201,7 +212,7 @@ export default function WedflowPage() {
               <div className="inline-flex items-center gap-2 mb-4">
                 <Film className="w-6 h-6 text-foreground" />
                 <h2 className="font-serif text-3xl md:text-4xl font-light">
-                  The Story Behind Wedflow
+                  Born Behind the Camera
                 </h2>
               </div>
               <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -220,20 +231,20 @@ export default function WedflowPage() {
                 </div>
                 <p className="text-muted-foreground text-sm leading-relaxed">
                   Norwedfilm is a wedding photography & videography studio
-                  based in Oslo, with 200+ weddings documented over 8+ years.
-                  We specialize in timeless wedding photography and cinematic
-                  wedding films — capturing authentic moments with an artistic
-                  eye and telling love stories with emotion and elegance.
+                  based in Oslo. Over 8+ years and 200+ weddings, we've
+                  specialized in timeless photography and cinematic wedding
+                  films — capturing authentic moments with an artistic eye and
+                  telling love stories with emotion and elegance.
                 </p>
                 <div className="flex items-center gap-8 mt-6 pt-4 border-t border-border">
                   <div>
                     <div className="text-2xl font-serif font-light">200+</div>
-                    <p className="text-xs text-muted-foreground">Weddings</p>
+                    <p className="text-xs text-muted-foreground">Weddings Filmed</p>
                   </div>
                   <div>
                     <div className="text-2xl font-serif font-light">8+</div>
                     <p className="text-xs text-muted-foreground">
-                      Years Experience
+                      Years on Set
                     </p>
                   </div>
                 </div>
@@ -245,16 +256,16 @@ export default function WedflowPage() {
                   <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center">
                     <AlertCircle className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="font-medium">The Problem We Saw</h3>
+                  <h3 className="font-medium">What We Witnessed</h3>
                 </div>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  After being present at hundreds of weddings, we saw the same
-                  pattern over and over: stressed couples juggling messages,
-                  spreadsheets and different apps for budget, guests and
-                  timeline. Vendors struggled to reach the right couples and
-                  manage bookings efficiently. There simply wasn't a single
-                  platform solving everything — especially not tailored for
-                  the Scandinavian market.
+                  Standing behind the camera at hundreds of weddings, we
+                  witnessed the same story: the florist arriving late because
+                  nobody shared the timeline, the couple panicking over
+                  seating 15 minutes before doors opened, the photographer
+                  missing the grandfather's speech because no one had a shot
+                  list. These aren't tech problems — they're human coordination
+                  problems. And no generic app was solving them.
                 </p>
               </Card>
 
@@ -264,14 +275,15 @@ export default function WedflowPage() {
                   <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
                     <Heart className="w-5 h-5 text-primary-foreground" />
                   </div>
-                  <h3 className="font-medium">Our Philosophy</h3>
+                  <h3 className="font-medium">Craft Over Algorithms</h3>
                 </div>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  We believe the best wedding experiences come from genuine
-                  connections. We take the time to understand each couple's
-                  story, style, and vision — and our unobtrusive approach lets
-                  us capture authentic, candid moments while couples simply
-                  enjoy their day. The same philosophy drives Wedflow.
+                  We don't believe a wedding can be optimized by an algorithm.
+                  Weddings are deeply personal — shaped by culture, family,
+                  and story. Our approach is to give couples and vendors the
+                  right visual tools for personal connection and creative
+                  coordination, not to automate the human decisions that make
+                  each wedding unique.
                 </p>
               </Card>
 
@@ -286,11 +298,12 @@ export default function WedflowPage() {
                   </h3>
                 </div>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  That's why we built Wedflow — the app we wished existed
-                  ourselves. A complete wedding platform where couples plan
-                  their wedding with powerful tools, and vendors reach the
-                  right couples through a marketplace with direct
-                  communication. All in one app, designed with love for
+                  That's why we built Wedflow — the platform we wished existed
+                  when we were the ones on set watching things fall apart. A
+                  wedding ecosystem that solves the real-world coordination
+                  problems we witnessed first-hand: photo planning, day-of
+                  timing, vendor deliveries, seating, and cultural
+                  traditions — designed with Scandinavian craft for
                   Scandinavian weddings.
                 </p>
               </Card>
@@ -302,11 +315,11 @@ export default function WedflowPage() {
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20 md:mb-28">
           <div className="text-center mb-12 md:mb-16">
             <h2 className="font-serif text-3xl md:text-4xl font-light mb-4">
-              Everything You Need
+              Tools Born from Real Weddings
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Powerful tools for couples and vendors — designed to make
-              wedding planning joyful, not stressful.
+              Every feature exists because we saw the need first-hand — at the
+              venue, behind the camera, at 2 AM editing timelines.
             </p>
           </div>
 
@@ -329,27 +342,28 @@ export default function WedflowPage() {
           </div>
         </section>
 
-        {/* For Vendors */}
+        {/* For Vendors — differentiated from WedMind's "CMS portal" positioning */}
         <section className="bg-card py-20 md:py-28 mb-20 md:mb-28">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
               <div>
                 <h2 className="font-serif text-3xl md:text-4xl font-light mb-6">
-                  For Wedding Vendors
+                  A Curated Vendor Community
                 </h2>
                 <p className="text-muted-foreground leading-relaxed mb-8">
-                  Reach couples who are actively planning their wedding.
-                  Showcase your work, manage bookings, and communicate
-                  directly — all through one platform designed for the
-                  wedding industry.
+                  Wedflow is not a directory where anyone uploads a profile.
+                  As wedding professionals ourselves, we've built a curated
+                  community of Scandinavian vendors who share our commitment
+                  to craft. You connect with couples through storytelling, not
+                  keyword bidding.
                 </p>
                 <ul className="space-y-4">
                   {[
-                    "Create your vendor profile with portfolio & pricing",
-                    "Receive and manage booking inquiries",
-                    "Direct messaging with couples",
-                    "Showcase products, packages & offers",
-                    "Build reviews and social proof",
+                    "Tell your story with a rich portfolio & visual profile",
+                    "Receive inquiries from couples who already know your style",
+                    "Coordinate deliveries and day-of logistics through shared timelines",
+                    "Threaded conversations — no lost emails or chat groups",
+                    "Grow organically through reviews and couple referrals",
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-3">
                       <CheckCircle className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
@@ -374,12 +388,13 @@ export default function WedflowPage() {
         {/* CTA Section */}
         <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="font-serif text-3xl md:text-4xl font-light mb-6">
-            Ready to Transform Your Wedding Planning?
+            Built by Wedding Professionals,<br />for Wedding Professionals
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
-            Whether you're a couple starting your wedding journey or a vendor
-            looking for the right couples — Wedflow brings everyone together
-            on one beautiful platform.
+            Wedflow isn't another planning checklist — it's the wedding
+            ecosystem that Norwedfilm spent 8 years wishing existed. For
+            couples who want to craft a meaningful day, and for vendors who
+            take pride in their craft.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/contact">
