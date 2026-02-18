@@ -36,7 +36,19 @@ const contactSchema = z.object({
 
 type ContactFormValues = z.infer<typeof contactSchema>;
 
-export function ContactForm() {
+interface ContactFormProps {
+  title?: string;
+  subtitle?: string;
+  email?: string;
+  phone?: string;
+}
+
+export function ContactForm({
+  title = "Let's Create Something Beautiful",
+  subtitle = "Ready to tell your love story? We'd love to hear from you. Fill out the form and we'll get back to you within 24 hours.",
+  email = "hello@norwedfilm.no",
+  phone = "+47 123 45 678",
+}: ContactFormProps) {
   const { toast } = useToast();
   
   const form = useForm<ContactFormValues>({
@@ -81,11 +93,10 @@ export function ContactForm() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
           <div>
             <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-light mb-6">
-              Let's Create Something Beautiful
+              {title}
             </h2>
             <p className="text-muted-foreground mb-8 leading-relaxed">
-              Ready to tell your love story? We'd love to hear from you. 
-              Fill out the form and we'll get back to you within 24 hours.
+              {subtitle}
             </p>
 
             <div className="space-y-6">
@@ -95,7 +106,7 @@ export function ContactForm() {
                 </div>
                 <div>
                   <h4 className="font-medium mb-1">Email</h4>
-                  <p className="text-muted-foreground text-sm">hello@norwedfilm.no</p>
+                  <p className="text-muted-foreground text-sm">{email}</p>
                 </div>
               </div>
 
@@ -105,7 +116,7 @@ export function ContactForm() {
                 </div>
                 <div>
                   <h4 className="font-medium mb-1">Phone</h4>
-                  <p className="text-muted-foreground text-sm">+47 123 45 678</p>
+                  <p className="text-muted-foreground text-sm">{phone}</p>
                 </div>
               </div>
 

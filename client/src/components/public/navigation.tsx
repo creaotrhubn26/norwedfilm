@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +11,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-const navLinks = [
+type SimpleNavLink = { href: string; label: string };
+type DropdownNavLink = { label: string; children: SimpleNavLink[] };
+type NavLink = SimpleNavLink | DropdownNavLink;
+
+const navLinks: NavLink[] = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
   {
@@ -25,10 +30,22 @@ const navLinks = [
   { href: "/contact", label: "Contact" },
 ];
 
+interface CmsNavigationItem {
+  id: string | number;
+  label: string;
+  url: string;
+  order?: number;
+  isActive?: boolean;
+}
+
 export function Navigation() {
   const [location] = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const { data: cmsNavigation } = useQuery<{ items: CmsNavigationItem[] }>({
+    queryKey: ["/api/cms/navigation/public"],
+  });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -39,6 +56,13 @@ export function Navigation() {
   }, []);
 
   const isActive = (href: string) => location === href;
+
+  const cmsLinks: SimpleNavLink[] = (cmsNavigation?.items || [])
+    .filter((item) => item.isActive !== false)
+    .sort((left, right) => (left.order ?? 0) - (right.order ?? 0))
+    .map((item) => ({ href: item.url, label: item.label }));
+
+  const resolvedNavLinks: NavLink[] = cmsLinks.length > 0 ? cmsLinks : navLinks;
 
   return (
     <nav
@@ -52,20 +76,20 @@ export function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
           <Link href="/">
-            <span
+            <img
+              src="/norwed.png"
+              alt="Norwed Film"
               className={cn(
-                "font-serif text-xl md:text-2xl font-semibold tracking-wide cursor-pointer transition-colors",
-                isScrolled ? "text-foreground" : "text-white"
+                "w-[200px] h-auto cursor-pointer transition-all",
+                isScrolled ? "brightness-0" : "brightness-0 invert"
               )}
               data-testid="link-logo"
-            >
-              NORWED FILM
-            </span>
+            />
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) =>
-              link.children ? (
+            {resolvedNavLinks.map((link) =>
+              "children" in link ? (
                 <DropdownMenu key={link.label}>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -140,8 +164,8 @@ export function Navigation() {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-background border-b border-border">
           <div className="px-4 py-4 space-y-2">
-            {navLinks.map((link) =>
-              link.children ? (
+            {resolvedNavLinks.map((link) =>
+              "children" in link ? (
                 <div key={link.label} className="space-y-1">
                   <span className="block px-3 py-2 text-sm font-medium text-muted-foreground">
                     {link.label}

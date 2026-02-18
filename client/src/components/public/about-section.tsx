@@ -1,5 +1,6 @@
 import { Camera, Film, Award, Heart } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
 
 const features = [
   {
@@ -25,24 +26,58 @@ const features = [
 ];
 
 export function AboutSection() {
+  const { data: cmsLanding } = useQuery<{
+    features?: Array<{ id?: string | number; icon?: string; title?: string; description?: string; is_active?: boolean; display_order?: number }>;
+    sections?: { features_title?: string | null; features_subtitle?: string | null };
+  }>({
+    queryKey: ["/api/cms/landing/public"],
+  });
+
+  const cmsFeatures = (cmsLanding?.features || [])
+    .filter((feature) => feature.is_active !== false)
+    .sort((left, right) => (left.display_order ?? 0) - (right.display_order ?? 0))
+    .map((feature, index) => {
+      const iconKey = (feature.icon || "").toLowerCase();
+      const icon = iconKey.includes("film")
+        ? Film
+        : iconKey.includes("award")
+          ? Award
+          : iconKey.includes("heart")
+            ? Heart
+            : Camera;
+
+      return {
+        id: feature.id ?? `cms-${index}`,
+        icon,
+        title: feature.title || "Feature",
+        description: feature.description || "",
+      };
+    });
+
+  const displayFeatures = cmsFeatures.length > 0 ? cmsFeatures : features;
+  const title = cmsLanding?.sections?.features_title || "Capturing Love, Creating Memories";
+  const subtitle = cmsLanding?.sections?.features_subtitle ||
+    "We are a team of passionate storytellers dedicated to documenting life's most precious moments. With years of experience and a genuine love for what we do, we create timeless visual narratives that you'll treasure forever.";
+
   return (
     <section className="py-20 md:py-28 bg-card">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto text-center mb-12 md:mb-16">
           <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-light mb-6">
-            Capturing Love, Creating Memories
+            {title}
           </h2>
           <p className="text-muted-foreground leading-relaxed">
-            We are a team of passionate storytellers dedicated to documenting life's 
-            most precious moments. With years of experience and a genuine love for 
-            what we do, we create timeless visual narratives that you'll treasure forever.
+            {subtitle}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature, index) => (
+          {displayFeatures.map((feature, index) => {
+            const featureKey = "id" in feature ? String(feature.id) : String(index);
+
+            return (
             <Card
-              key={index}
+              key={featureKey}
               className="p-6 bg-background border-border text-center group hover-elevate"
               data-testid={`card-feature-${index}`}
             >
@@ -54,7 +89,8 @@ export function AboutSection() {
                 {feature.description}
               </p>
             </Card>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

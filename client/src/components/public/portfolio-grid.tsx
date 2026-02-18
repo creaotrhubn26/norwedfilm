@@ -1,7 +1,6 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { Project } from "@shared/schema";
-import { cn } from "@/lib/utils";
 import { Play } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -79,8 +78,7 @@ export function PortfolioSection() {
             Our Portfolio
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Every love story is unique. We capture the emotions, the beauty, and 
-            the timeless moments that make your day unforgettable.
+            Every love story is unique. We capture the emotions, the beauty, and timeless moments that make your day unforgettable.
           </p>
         </div>
 

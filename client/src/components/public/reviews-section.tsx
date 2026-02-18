@@ -35,9 +35,16 @@ const defaultReviews: Partial<Review>[] = [
 interface ReviewsProps {
   reviews?: Partial<Review>[];
   featured?: boolean;
+  title?: string;
+  subtitle?: string;
 }
 
-export function ReviewsSection({ reviews = defaultReviews, featured = true }: ReviewsProps) {
+export function ReviewsSection({
+  reviews = defaultReviews,
+  featured = true,
+  title = "What Our Couples Say",
+  subtitle = "We're honored to be part of so many beautiful love stories. Here's what our couples have to say about their experience.",
+}: ReviewsProps) {
   const displayReviews = featured 
     ? reviews.filter(r => r.featured).slice(0, 3)
     : reviews;
@@ -47,11 +54,10 @@ export function ReviewsSection({ reviews = defaultReviews, featured = true }: Re
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 md:mb-16">
           <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-light mb-4">
-            What Our Couples Say
+            {title}
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            We're honored to be part of so many beautiful love stories. 
-            Here's what our couples have to say about their experience.
+            {subtitle}
           </p>
         </div>
 
