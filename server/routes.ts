@@ -1383,9 +1383,11 @@ export async function registerRoutes(
 
   app.get("/api/admin/api-key/status", isAuthenticated, async (_req, res) => {
     try {
-      const [apiKeySetting, rotatedAtSetting] = await Promise.all([
+      const [apiKeySetting, rotatedAtSetting, rotatedBySetting, rotatedIpSetting] = await Promise.all([
         storage.getSetting("norwedfilm_api_key"),
         storage.getSetting("norwedfilm_api_key_rotated_at"),
+        storage.getSetting("norwedfilm_api_key_rotated_by"),
+        storage.getSetting("norwedfilm_api_key_rotated_ip"),
       ]);
 
       const dbKey = apiKeySetting?.value?.trim() || null;
@@ -1395,6 +1397,8 @@ export async function registerRoutes(
         enabled: Boolean(dbKey || envKey),
         source: dbKey ? "database" : envKey ? "environment" : "none",
         rotatedAt: rotatedAtSetting?.value || null,
+        rotatedBy: rotatedBySetting?.value || null,
+        rotatedIp: rotatedIpSetting?.value || null,
       });
     } catch (error) {
       console.error("Error fetching API key status:", error);
@@ -1409,6 +1413,17 @@ export async function registerRoutes(
         ? providedApiKey
         : `nwf_${randomBytes(32).toString("hex")}`;
 
+      const actor = ((req.session as any)?.user?.email as string | undefined)
+        || ((req.session as any)?.user?.id as string | undefined)
+        || "api-key";
+      const forwardedFor = req.headers["x-forwarded-for"];
+      const forwardedIp = Array.isArray(forwardedFor)
+        ? forwardedFor[0]
+        : typeof forwardedFor === "string"
+          ? forwardedFor.split(",")[0]?.trim()
+          : undefined;
+      const sourceIp = forwardedIp || req.ip || "unknown";
+
       if (nextApiKey.length < 32) {
         return res.status(400).json({ message: "API key must be at least 32 characters" });
       }
@@ -1417,12 +1432,16 @@ export async function registerRoutes(
       await Promise.all([
         storage.upsertSetting("norwedfilm_api_key", nextApiKey, "text"),
         storage.upsertSetting("norwedfilm_api_key_rotated_at", rotatedAt, "text"),
+        storage.upsertSetting("norwedfilm_api_key_rotated_by", actor, "text"),
+        storage.upsertSetting("norwedfilm_api_key_rotated_ip", sourceIp, "text"),
       ]);
 
       res.json({
         success: true,
         apiKey: nextApiKey,
         rotatedAt,
+        rotatedBy: actor,
+        rotatedIp: sourceIp,
       });
     } catch (error) {
       console.error("Error rotating API key:", error);

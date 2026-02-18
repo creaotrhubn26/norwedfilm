@@ -34,6 +34,8 @@ interface ApiKeyStatus {
   enabled: boolean;
   source: "database" | "environment" | "none";
   rotatedAt: string | null;
+  rotatedBy: string | null;
+  rotatedIp: string | null;
 }
 
 interface RotateApiKeyResponse {
@@ -310,6 +312,8 @@ export default function AdminSettings() {
                   <p>Status: <span className="font-medium text-foreground">{apiKeyStatus?.enabled ? "Aktiv" : "Ikke satt"}</span></p>
                   <p>Kilde: <span className="font-medium text-foreground">{apiKeyStatus?.source || "ukjent"}</span></p>
                   <p>Sist rotert: <span className="font-medium text-foreground">{apiKeyStatus?.rotatedAt ? new Date(apiKeyStatus.rotatedAt).toLocaleString() : "aldri"}</span></p>
+                  <p>Roterte som: <span className="font-medium text-foreground">{apiKeyStatus?.rotatedBy || "ukjent"}</span></p>
+                  <p>Kilde-IP: <span className="font-medium text-foreground">{apiKeyStatus?.rotatedIp || "ukjent"}</span></p>
                 </div>
 
                 <Button
