@@ -7,7 +7,7 @@ import { randomUUID } from "crypto";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 import { storage } from "./storage";
-import { setupAuth, registerAuthRoutes, isAuthenticated } from "./auth";
+import { setupAuth, registerAuthRoutes, isAuthenticated, isApiKeyAuthenticated } from "./auth";
 import {
   insertProjectSchema,
   insertMediaSchema,
@@ -322,6 +322,15 @@ export async function registerRoutes(
   // Setup authentication
   await setupAuth(app);
   registerAuthRoutes(app);
+
+  app.get("/api/admin/auth/health", isApiKeyAuthenticated, (_req, res) => {
+    res.json({
+      ok: true,
+      auth: "api-key",
+      service: "norwedfilm",
+      timestamp: new Date().toISOString(),
+    });
+  });
 
   app.use("/uploads", express.static(uploadsDir));
 
