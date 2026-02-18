@@ -26,6 +26,7 @@ import AdminBlog from "@/pages/admin/blog";
 import AdminSubscribers from "@/pages/admin/subscribers";
 import AdminGalleries from "@/pages/admin/galleries";
 import AdminBookings from "@/pages/admin/bookings";
+import AdminVisualEditor from "@/pages/admin/visual-editor";
 
 function Router() {
   return (
@@ -50,6 +51,7 @@ function Router() {
       <Route path="/admin/subscribers" component={AdminSubscribers} />
       <Route path="/admin/galleries" component={AdminGalleries} />
       <Route path="/admin/bookings" component={AdminBookings} />
+      <Route path="/admin/visual-editor" component={AdminVisualEditor} />
       
       <Route component={NotFound} />
     </Switch>

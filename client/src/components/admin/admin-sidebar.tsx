@@ -32,10 +32,15 @@ const menuItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/projects", label: "Projects", icon: FolderOpen },
   { href: "/admin/media", label: "Media Library", icon: Image },
+  { href: "/admin/galleries", label: "Client Galleries", icon: Image },
+  { href: "/admin/bookings", label: "Bookings", icon: FolderOpen },
+  { href: "/admin/blog", label: "Blog", icon: FileText },
+  { href: "/admin/subscribers", label: "Subscribers", icon: MessageSquare },
   { href: "/admin/pages", label: "Pages", icon: FileText },
   { href: "/admin/contacts", label: "Contact Messages", icon: MessageSquare },
   { href: "/admin/reviews", label: "Reviews", icon: Star },
   { href: "/admin/hero", label: "Hero Slides", icon: Sliders },
+  { href: "/admin/visual-editor", label: "Visual Editor", icon: LayoutDashboard },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
@@ -52,8 +57,8 @@ export function AdminSidebar() {
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <Link href="/">
-          <span className="font-serif text-lg font-semibold tracking-wide cursor-pointer flex items-center gap-2">
-            NORWED FILM
+          <span className="cursor-pointer flex items-center gap-2">
+              <img src="/norwed.png" alt="Norwed Film" className="w-[200px] h-auto brightness-0" />
             <ExternalLink className="w-3 h-3 text-muted-foreground" />
           </span>
         </Link>
