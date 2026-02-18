@@ -2,6 +2,7 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import type { User } from "@shared/models/auth";
 import { timingSafeEqual } from "crypto";
+import { storage } from "./storage";
 
 const defaultUser: User = {
   id: "local-admin",
@@ -48,6 +49,53 @@ function hasValidApiKey(rawApiKey: string | undefined): boolean {
   return timingSafeEqual(provided, expected);
 }
 
+let apiKeyCache: { value: string | null; expiresAt: number } = {
+  value: null,
+  expiresAt: 0,
+};
+
+async function getConfiguredApiKey(): Promise<string | null> {
+  const now = Date.now();
+  if (now < apiKeyCache.expiresAt) {
+    return apiKeyCache.value;
+  }
+
+  try {
+    const setting = await storage.getSetting("norwedfilm_api_key");
+    const dbKey = setting?.value?.trim() || null;
+    const envKey = process.env.NORWEDFILM_API_KEY || process.env.X_API_KEY || null;
+
+    apiKeyCache = {
+      value: dbKey || envKey,
+      expiresAt: now + 30_000,
+    };
+  } catch {
+    apiKeyCache = {
+      value: process.env.NORWEDFILM_API_KEY || process.env.X_API_KEY || null,
+      expiresAt: now + 30_000,
+    };
+  }
+
+  return apiKeyCache.value;
+}
+
+async function hasValidApiKeyAsync(rawApiKey: string | undefined): Promise<boolean> {
+  const configuredApiKey = await getConfiguredApiKey();
+
+  if (!configuredApiKey || !rawApiKey) {
+    return false;
+  }
+
+  const provided = Buffer.from(rawApiKey, "utf8");
+  const expected = Buffer.from(configuredApiKey, "utf8");
+
+  if (provided.length !== expected.length) {
+    return false;
+  }
+
+  return timingSafeEqual(provided, expected);
+}
+
 function getApiKeyFromRequest(req: Parameters<RequestHandler>[0]): string | undefined {
   const apiKeyHeader = req.header("x-api-key") || undefined;
   const authHeader = req.header("authorization") || "";
@@ -58,9 +106,9 @@ function getApiKeyFromRequest(req: Parameters<RequestHandler>[0]): string | unde
   return apiKeyHeader || bearerToken;
 }
 
-export const isAuthenticated: RequestHandler = (req, res, next) => {
+export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const providedApiKey = getApiKeyFromRequest(req);
-  if (hasValidApiKey(providedApiKey)) {
+  if (await hasValidApiKeyAsync(providedApiKey)) {
     return next();
   }
 
@@ -71,9 +119,9 @@ export const isAuthenticated: RequestHandler = (req, res, next) => {
   return next();
 };
 
-export const isApiKeyAuthenticated: RequestHandler = (req, res, next) => {
+export const isApiKeyAuthenticated: RequestHandler = async (req, res, next) => {
   const providedApiKey = getApiKeyFromRequest(req);
-  if (!hasValidApiKey(providedApiKey)) {
+  if (!(await hasValidApiKeyAsync(providedApiKey))) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 

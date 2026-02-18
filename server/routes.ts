@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import fs from "fs";
 import path from "path";
 import multer from "multer";
-import { randomUUID } from "crypto";
+import { randomBytes, randomUUID } from "crypto";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 import { storage } from "./storage";
@@ -1378,6 +1378,55 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error updating settings:", error);
       res.status(500).json({ message: "Failed to update settings" });
+    }
+  });
+
+  app.get("/api/admin/api-key/status", isAuthenticated, async (_req, res) => {
+    try {
+      const [apiKeySetting, rotatedAtSetting] = await Promise.all([
+        storage.getSetting("norwedfilm_api_key"),
+        storage.getSetting("norwedfilm_api_key_rotated_at"),
+      ]);
+
+      const dbKey = apiKeySetting?.value?.trim() || null;
+      const envKey = process.env.NORWEDFILM_API_KEY || process.env.X_API_KEY || null;
+
+      res.json({
+        enabled: Boolean(dbKey || envKey),
+        source: dbKey ? "database" : envKey ? "environment" : "none",
+        rotatedAt: rotatedAtSetting?.value || null,
+      });
+    } catch (error) {
+      console.error("Error fetching API key status:", error);
+      res.status(500).json({ message: "Failed to fetch API key status" });
+    }
+  });
+
+  app.post("/api/admin/api-key/rotate", isAuthenticated, async (req, res) => {
+    try {
+      const providedApiKey = typeof req.body?.apiKey === "string" ? req.body.apiKey.trim() : "";
+      const nextApiKey = providedApiKey.length > 0
+        ? providedApiKey
+        : `nwf_${randomBytes(32).toString("hex")}`;
+
+      if (nextApiKey.length < 32) {
+        return res.status(400).json({ message: "API key must be at least 32 characters" });
+      }
+
+      const rotatedAt = new Date().toISOString();
+      await Promise.all([
+        storage.upsertSetting("norwedfilm_api_key", nextApiKey, "text"),
+        storage.upsertSetting("norwedfilm_api_key_rotated_at", rotatedAt, "text"),
+      ]);
+
+      res.json({
+        success: true,
+        apiKey: nextApiKey,
+        rotatedAt,
+      });
+    } catch (error) {
+      console.error("Error rotating API key:", error);
+      res.status(500).json({ message: "Failed to rotate API key" });
     }
   });
 

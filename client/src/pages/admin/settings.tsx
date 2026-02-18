@@ -4,12 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, KeyRound, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { SiteSetting } from "@shared/schema";
 import { useForm } from "react-hook-form";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Form,
   FormControl,
@@ -30,8 +30,21 @@ interface SettingsForm {
   aboutText: string;
 }
 
+interface ApiKeyStatus {
+  enabled: boolean;
+  source: "database" | "environment" | "none";
+  rotatedAt: string | null;
+}
+
+interface RotateApiKeyResponse {
+  success: boolean;
+  apiKey: string;
+  rotatedAt: string;
+}
+
 export default function AdminSettings() {
   const { toast } = useToast();
+  const [rotatedApiKey, setRotatedApiKey] = useState<string | null>(null);
 
   const { data: settings, isLoading } = useQuery<SiteSetting[]>({
     queryKey: ["/api/admin/settings"],
@@ -48,6 +61,10 @@ export default function AdminSettings() {
       facebookUrl: "",
       aboutText: "",
     },
+  });
+
+  const { data: apiKeyStatus } = useQuery<ApiKeyStatus>({
+    queryKey: ["/api/admin/api-key/status"],
   });
 
   useEffect(() => {
@@ -81,8 +98,33 @@ export default function AdminSettings() {
     },
   });
 
+  const rotateApiKeyMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/api-key/rotate");
+      return response.json() as Promise<RotateApiKeyResponse>;
+    },
+    onSuccess: (data) => {
+      setRotatedApiKey(data.apiKey);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/api-key/status"] });
+      toast({ title: "API key rotert", description: "Ny nøkkel er generert. Kopier den nå." });
+    },
+    onError: () => {
+      toast({ title: "Rotasjon feilet", description: "Kunne ikke rotere API key.", variant: "destructive" });
+    },
+  });
+
   const onSubmit = (data: SettingsForm) => {
     updateMutation.mutate(data);
+  };
+
+  const copyApiKey = async () => {
+    if (!rotatedApiKey) return;
+    try {
+      await navigator.clipboard.writeText(rotatedApiKey);
+      toast({ title: "Kopiert", description: "Ny API key er kopiert til utklippstavlen." });
+    } catch {
+      toast({ title: "Kopiering feilet", description: "Klarte ikke kopiere API key.", variant: "destructive" });
+    }
   };
 
   if (isLoading) {
@@ -250,6 +292,51 @@ export default function AdminSettings() {
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <KeyRound className="w-5 h-5" />
+                  API Key Rotation
+                </CardTitle>
+                <CardDescription>
+                  Roter nøkkel for ekstern admin-API tilgang (`x-api-key` / `Bearer`).
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>Status: <span className="font-medium text-foreground">{apiKeyStatus?.enabled ? "Aktiv" : "Ikke satt"}</span></p>
+                  <p>Kilde: <span className="font-medium text-foreground">{apiKeyStatus?.source || "ukjent"}</span></p>
+                  <p>Sist rotert: <span className="font-medium text-foreground">{apiKeyStatus?.rotatedAt ? new Date(apiKeyStatus.rotatedAt).toLocaleString() : "aldri"}</span></p>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => rotateApiKeyMutation.mutate()}
+                  disabled={rotateApiKeyMutation.isPending}
+                  data-testid="button-rotate-api-key"
+                >
+                  {rotateApiKeyMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <KeyRound className="w-4 h-4 mr-2" />
+                  )}
+                  Roter API Key
+                </Button>
+
+                {rotatedApiKey && (
+                  <div className="space-y-2">
+                    <FormLabel>Ny API Key (vises kun nå)</FormLabel>
+                    <div className="flex gap-2">
+                      <Input value={rotatedApiKey} readOnly data-testid="input-rotated-api-key" />
+                      <Button type="button" variant="outline" onClick={copyApiKey} data-testid="button-copy-api-key">
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
