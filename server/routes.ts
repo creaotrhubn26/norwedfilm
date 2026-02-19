@@ -60,6 +60,21 @@ function stripHtml(value: string | null | undefined) {
   return (value || "").replace(/<[^>]+>/g, "").trim();
 }
 
+function xmlEscape(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function toAbsoluteUrl(baseUrl: string, pathname: string): string {
+  const normalizedBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+  const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  return `${normalizedBase}${normalizedPath}`;
+}
+
 const subscriberStatusSchema = z.object({
   status: z.enum(["active", "unsubscribed"]),
 });
@@ -890,6 +905,146 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error generating RSS feed:", error);
       res.status(500).send("Failed to generate feed");
+    }
+  });
+
+  app.get("/robots.txt", async (req, res) => {
+    try {
+      const baseUrl = (process.env.SITE_URL || `${req.protocol}://${req.get("host")}`).replace(/\/$/, "");
+      const robots = [
+        "User-agent: *",
+        "Allow: /",
+        "",
+        "Disallow: /admin",
+        "Disallow: /admin/",
+        "Disallow: /api",
+        "Disallow: /api/",
+        "",
+        `Sitemap: ${baseUrl}/sitemap.xml`,
+      ].join("\n");
+
+      res.set("Content-Type", "text/plain; charset=utf-8");
+      res.send(robots);
+    } catch (error) {
+      console.error("Error generating robots.txt:", error);
+      res.status(500).send("Failed to generate robots.txt");
+    }
+  });
+
+  app.get("/sitemap.xml", async (req, res) => {
+    try {
+      const baseUrl = (process.env.SITE_URL || `${req.protocol}://${req.get("host")}`).replace(/\/$/, "");
+      const staticUrls: Array<{ path: string; changefreq: string; priority: string }> = [
+        { path: "/", changefreq: "weekly", priority: "1.0" },
+        { path: "/about", changefreq: "monthly", priority: "0.7" },
+        { path: "/contact", changefreq: "monthly", priority: "0.8" },
+        { path: "/reviews", changefreq: "monthly", priority: "0.7" },
+        { path: "/evendi", changefreq: "monthly", priority: "0.6" },
+      ];
+
+      const [projects, blogPosts, publishedPages] = await Promise.all([
+        storage.getPublishedProjects(),
+        storage.getPublishedBlogPosts(),
+        storage.getPublishedPages(),
+      ]);
+
+      type BuilderRow = { slug: string; updated_at?: string | Date | null };
+      let visualEditorPages: BuilderRow[] = [];
+
+      try {
+        const builderResult = await pool.query(
+          `SELECT slug, updated_at FROM builder_pages WHERE status = 'published' AND slug IS NOT NULL AND slug <> '' ORDER BY updated_at DESC NULLS LAST`,
+        );
+        visualEditorPages = [...visualEditorPages, ...builderResult.rows];
+      } catch {
+        // Table might not exist in all environments.
+      }
+
+      try {
+        const cmsBuilderResult = await pool.query(
+          `SELECT slug, updated_at FROM cms_builder_pages WHERE status = 'published' AND slug IS NOT NULL AND slug <> '' ORDER BY updated_at DESC NULLS LAST`,
+        );
+        visualEditorPages = [...visualEditorPages, ...cmsBuilderResult.rows];
+      } catch {
+        // Table might not exist in all environments.
+      }
+
+      const seen = new Set<string>();
+      const appendUrl = (pathname: string, options?: { lastmod?: Date | null; changefreq?: string; priority?: string }) => {
+        const loc = toAbsoluteUrl(baseUrl, pathname);
+        if (seen.has(loc)) return;
+        seen.add(loc);
+
+        xml += '  <url>\n';
+        xml += `    <loc>${xmlEscape(loc)}</loc>\n`;
+        if (options?.lastmod) {
+          xml += `    <lastmod>${new Date(options.lastmod).toISOString()}</lastmod>\n`;
+        }
+        xml += `    <changefreq>${options?.changefreq || "monthly"}</changefreq>\n`;
+        xml += `    <priority>${options?.priority || "0.7"}</priority>\n`;
+        xml += '  </url>\n';
+      };
+
+      const staticSlugs = new Set(["", "about", "contact", "reviews", "evendi", "home"]);
+
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+      for (const page of staticUrls) {
+        appendUrl(page.path, { changefreq: page.changefreq, priority: page.priority });
+      }
+
+      for (const project of projects) {
+        if (!project.slug) continue;
+        appendUrl(`/project/${project.slug}`, {
+          lastmod: project.updatedAt || null,
+          changefreq: "monthly",
+          priority: "0.8",
+        });
+      }
+
+      for (const post of blogPosts) {
+        if (!post.slug) continue;
+        appendUrl(`/blog/${post.slug}`, {
+          lastmod: post.updatedAt || post.publishedAt || null,
+          changefreq: "monthly",
+          priority: "0.7",
+        });
+      }
+
+      for (const page of publishedPages) {
+        const slug = String(page.slug || "").trim();
+        if (!slug) continue;
+        if (slug.startsWith("admin") || slug.startsWith("api/")) continue;
+        if (staticSlugs.has(slug)) continue;
+
+        appendUrl(`/${slug}`, {
+          lastmod: page.updatedAt || null,
+          changefreq: "weekly",
+          priority: "0.7",
+        });
+      }
+
+      for (const visualPage of visualEditorPages) {
+        const slug = String(visualPage.slug || "").trim();
+        if (!slug) continue;
+        if (slug.startsWith("admin") || slug.startsWith("api/")) continue;
+        if (staticSlugs.has(slug)) continue;
+
+        appendUrl(`/${slug}`, {
+          lastmod: visualPage.updated_at ? new Date(visualPage.updated_at) : null,
+          changefreq: "weekly",
+          priority: "0.7",
+        });
+      }
+
+      xml += '</urlset>';
+
+      res.set("Content-Type", "application/xml; charset=utf-8");
+      res.send(xml);
+    } catch (error) {
+      console.error("Error generating sitemap:", error);
+      res.status(500).send("Failed to generate sitemap");
     }
   });
 
