@@ -117,10 +117,38 @@ interface IssueSummary {
   example_urls: string[];
 }
 
+interface SeoAction {
+  key: string;
+  title: string;
+  impact: "high" | "medium" | "low";
+  count: number;
+  description: string;
+  action: string;
+  examples: string[];
+}
+
+interface SeoInsightsData {
+  generatedAt: string;
+  job: { id: number; targetUrl: string; status: string };
+  overview: {
+    totalPages: number;
+    seoHealthScore: number;
+    errorPages: number;
+    nonIndexablePages: number;
+    missingTitlePages: number;
+    missingMetaDescriptionPages: number;
+    thinContentPages: number;
+    slowPages: number;
+    pagesWithMissingAlt: number;
+    imagesMissingAltTotal: number;
+  };
+  actions: SeoAction[];
+}
+
 // ── Main Component ───────────────────────────────────────────────────
 export function CrawlerDashboard() {
   const { toast } = useToast();
-  const [activeView, setActiveView] = useState<"jobs" | "new" | "results" | "issues" | "duplicates" | "redirects" | "compare" | "schedules">("jobs");
+  const [activeView, setActiveView] = useState<"jobs" | "new" | "results" | "seo" | "issues" | "duplicates" | "redirects" | "compare" | "schedules">("jobs");
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [compareJobId, setCompareJobId] = useState<number | null>(null);
 
@@ -148,6 +176,7 @@ export function CrawlerDashboard() {
           { key: "new", label: "Ny crawl", icon: Plus },
           ...(selectedJobId ? [
             { key: "results", label: "Resultater", icon: FileText },
+            { key: "seo", label: "SEO tiltak", icon: BarChart3 },
             { key: "issues", label: "Problemer", icon: AlertTriangle },
             { key: "duplicates", label: "Duplikater", icon: RefreshCw },
             { key: "redirects", label: "Omdirigeringer", icon: Link2 },
@@ -179,6 +208,9 @@ export function CrawlerDashboard() {
       )}
       {activeView === "results" && selectedJobId && (
         <CrawlResults jobId={selectedJobId} />
+      )}
+      {activeView === "seo" && selectedJobId && (
+        <SeoInsights jobId={selectedJobId} />
       )}
       {activeView === "issues" && selectedJobId && (
         <IssuesSummary jobId={selectedJobId} />
@@ -818,6 +850,112 @@ function ResultDetail({ result: r }: { result: CrawlResultRow }) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function SeoInsights({ jobId }: { jobId: number }) {
+  const { data, isLoading } = useQuery<SeoInsightsData>({
+    queryKey: ["/api/cms/crawler/jobs", jobId, "seo-insights"],
+    queryFn: () => crawlerApi(`/api/cms/crawler/jobs/${jobId}/seo-insights`),
+  });
+
+  if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+
+  if (!data) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-muted-foreground">Ingen SEO-innsikt tilgjengelig enda</CardContent>
+      </Card>
+    );
+  }
+
+  const impactBadgeClasses: Record<SeoAction["impact"], string> = {
+    high: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
+    medium: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
+    low: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+  };
+
+  const impactLabels: Record<SeoAction["impact"], string> = {
+    high: "Høy",
+    medium: "Middels",
+    low: "Lav",
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">SEO-tiltak basert på crawl</CardTitle>
+          <CardDescription>
+            Mål: {data.job.targetUrl} · Generert {new Date(data.generatedAt).toLocaleString("nb-NO")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <StatBox label="SEO-score" value={data.overview.seoHealthScore} color={data.overview.seoHealthScore >= 80 ? "green" : data.overview.seoHealthScore >= 60 ? "yellow" : "red"} />
+            <StatBox label="Analyserte sider" value={data.overview.totalPages} />
+            <StatBox label="Feilsider" value={data.overview.errorPages} color={data.overview.errorPages > 0 ? "red" : "green"} />
+            <StatBox label="Ikke-indekserbare" value={data.overview.nonIndexablePages} color={data.overview.nonIndexablePages > 0 ? "red" : "green"} />
+            <StatBox label="Tynne sider" value={data.overview.thinContentPages} color={data.overview.thinContentPages > 0 ? "yellow" : "green"} />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatBox label="Mangler tittel" value={data.overview.missingTitlePages} color={data.overview.missingTitlePages > 0 ? "red" : "green"} />
+            <StatBox label="Mangler meta" value={data.overview.missingMetaDescriptionPages} color={data.overview.missingMetaDescriptionPages > 0 ? "red" : "green"} />
+            <StatBox label="Trege sider" value={data.overview.slowPages} color={data.overview.slowPages > 0 ? "yellow" : "green"} />
+            <StatBox label="Bilder uten alt" value={data.overview.imagesMissingAltTotal} color={data.overview.imagesMissingAltTotal > 0 ? "yellow" : "green"} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {data.actions.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+            <p className="font-medium">Ingen kritiske SEO-tiltak funnet</p>
+            <p className="text-sm text-muted-foreground">Crawleren fant ingen tiltak som krever umiddelbar oppfølging.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {data.actions.map((action) => (
+            <Card key={action.key}>
+              <CardContent className="py-4 space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h4 className="font-semibold">{action.title}</h4>
+                    <p className="text-sm text-muted-foreground">{action.description}</p>
+                  </div>
+                  <div className="text-right">
+                    <Badge className={impactBadgeClasses[action.impact]}>{impactLabels[action.impact]} prioritet</Badge>
+                    <p className="text-xs text-muted-foreground mt-1">{action.count} sider</p>
+                  </div>
+                </div>
+
+                <Alert>
+                  <AlertDescription>
+                    <span className="font-medium">Tiltak: </span>
+                    {action.action}
+                  </AlertDescription>
+                </Alert>
+
+                {action.examples.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Eksempelsider:</p>
+                    <div className="space-y-0.5">
+                      {action.examples.map((url) => (
+                        <a key={`${action.key}-${url}`} href={url} target="_blank" rel="noreferrer" className="block text-xs text-blue-600 hover:underline truncate">
+                          {url}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -2,6 +2,35 @@ import type { Express, RequestHandler } from "express";
 import { pool } from "./db";
 import { cancelCrawl, findDuplicatePages, getCrawlProgress, getCrawlSummary, runCrawlJob } from "./crawler-engine";
 
+type SeoImpact = "high" | "medium" | "low";
+
+interface SeoAction {
+  key: string;
+  title: string;
+  impact: SeoImpact;
+  count: number;
+  description: string;
+  action: string;
+  examples: string[];
+}
+
+function parseCount(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function scoreSeoHealth(totalPages: number, actions: SeoAction[]): number {
+  if (totalPages <= 0) return 0;
+
+  const weightedIssues = actions.reduce((sum, action) => {
+    const weight = action.impact === "high" ? 3 : action.impact === "medium" ? 2 : 1;
+    return sum + action.count * weight;
+  }, 0);
+
+  const normalizedPenalty = Math.min(1, weightedIssues / Math.max(1, totalPages * 6));
+  return Math.max(1, Math.round(100 - normalizedPenalty * 100));
+}
+
 async function ensureCrawlerTables() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS crawler_jobs (
@@ -289,6 +318,223 @@ export async function registerCrawlerRoutes(app: Express, authMiddleware: Reques
     } catch (error) {
       console.error("Error fetching crawler issues:", error);
       res.status(500).json({ error: "Failed to fetch crawler issues" });
+    }
+  });
+
+  app.get("/api/cms/crawler/jobs/:id/seo-insights", authMiddleware, async (req, res) => {
+    try {
+      const jobId = parseInt(String(req.params.id), 10);
+      if (!Number.isFinite(jobId)) {
+        return res.status(400).json({ error: "Invalid job id" });
+      }
+
+      const jobResult = await pool.query("SELECT id, target_url, status FROM crawler_jobs WHERE id = $1", [jobId]);
+      if (jobResult.rows.length === 0) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+
+      const overviewResult = await pool.query(
+        `SELECT
+          COUNT(*) FILTER (WHERE content_type ILIKE '%text/html%') AS total_html_pages,
+          COUNT(*) FILTER (WHERE status_code >= 400 OR status_code = 0) AS error_pages,
+          COUNT(*) FILTER (WHERE NOT indexable) AS non_indexable_pages,
+          COUNT(*) FILTER (WHERE response_time_ms > 2000) AS slow_pages,
+          COUNT(*) FILTER (WHERE COALESCE(title, '') = '') AS missing_title_pages,
+          COUNT(*) FILTER (WHERE COALESCE(meta_description, '') = '') AS missing_meta_description_pages,
+          COUNT(*) FILTER (WHERE COALESCE(h1_count, 0) = 0) AS missing_h1_pages,
+          COUNT(*) FILTER (WHERE COALESCE(canonical_url, '') = '') AS missing_canonical_pages,
+          COUNT(*) FILTER (WHERE COALESCE(word_count, 0) > 0 AND word_count < 300) AS thin_content_pages,
+          COUNT(*) FILTER (WHERE COALESCE(images_without_alt, 0) > 0) AS pages_with_images_missing_alt,
+          COALESCE(SUM(COALESCE(images_without_alt, 0)), 0) AS images_missing_alt_total,
+          COUNT(*) FILTER (WHERE COALESCE(og_tags->>'og:title', '') = '') AS missing_og_title_pages,
+          COUNT(*) FILTER (WHERE COALESCE(og_tags->>'og:description', '') = '') AS missing_og_description_pages,
+          COUNT(*) FILTER (WHERE COALESCE(og_tags->>'og:image', '') = '') AS missing_og_image_pages
+         FROM crawler_results
+         WHERE job_id = $1`,
+        [jobId],
+      );
+
+      const overview = overviewResult.rows[0] || {};
+
+      const getExampleUrls = async (whereClause: string, params: unknown[] = []) => {
+        const result = await pool.query(
+          `SELECT url FROM crawler_results WHERE job_id = $1 AND ${whereClause} ORDER BY url ASC LIMIT 5`,
+          [jobId, ...params],
+        );
+        return result.rows.map((row) => String(row.url));
+      };
+
+      const actions: SeoAction[] = [];
+
+      const missingTitlePages = parseCount(overview.missing_title_pages);
+      if (missingTitlePages > 0) {
+        actions.push({
+          key: "missing_titles",
+          title: "Mangler sidetittel",
+          impact: "high",
+          count: missingTitlePages,
+          description: "Sider uten <title> får svakere synlighet og lavere CTR i søkeresultater.",
+          action: "Legg inn unik tittel per side (ca. 50–60 tegn) med primært søkeord først.",
+          examples: await getExampleUrls("COALESCE(title, '') = ''"),
+        });
+      }
+
+      const missingMetaDescriptionPages = parseCount(overview.missing_meta_description_pages);
+      if (missingMetaDescriptionPages > 0) {
+        actions.push({
+          key: "missing_meta_descriptions",
+          title: "Mangler meta-beskrivelse",
+          impact: "high",
+          count: missingMetaDescriptionPages,
+          description: "Meta-beskrivelse påvirker ikke rangering direkte, men påvirker klikkrate betydelig.",
+          action: "Legg inn unik meta-beskrivelse (ca. 120–155 tegn) med tydelig verdi og CTA.",
+          examples: await getExampleUrls("COALESCE(meta_description, '') = ''"),
+        });
+      }
+
+      const errorPages = parseCount(overview.error_pages);
+      if (errorPages > 0) {
+        actions.push({
+          key: "error_pages",
+          title: "Sider med 4xx/5xx-feil",
+          impact: "high",
+          count: errorPages,
+          description: "Feilsider reduserer crawl-kvalitet, brukeropplevelse og kan svekke rangering.",
+          action: "Fiks brutte URL-er, opprett riktige redirects og fjern interne lenker til feilsider.",
+          examples: await getExampleUrls("status_code >= 400 OR status_code = 0"),
+        });
+      }
+
+      const nonIndexablePages = parseCount(overview.non_indexable_pages);
+      if (nonIndexablePages > 0) {
+        actions.push({
+          key: "non_indexable",
+          title: "Ikke-indekserbare sider",
+          impact: "high",
+          count: nonIndexablePages,
+          description: "Sider som ikke kan indekseres kan ikke rangere i Google.",
+          action: "Verifiser robots/noindex/canonical for viktige landingssider og fjern utilsiktede blokkeringer.",
+          examples: await getExampleUrls("NOT indexable"),
+        });
+      }
+
+      const missingH1Pages = parseCount(overview.missing_h1_pages);
+      if (missingH1Pages > 0) {
+        actions.push({
+          key: "missing_h1",
+          title: "Mangler H1",
+          impact: "medium",
+          count: missingH1Pages,
+          description: "H1 hjelper søkemotorer å forstå sidens hovedtema.",
+          action: "Legg til én tydelig H1 per side som matcher søkeintensjonen.",
+          examples: await getExampleUrls("COALESCE(h1_count, 0) = 0"),
+        });
+      }
+
+      const thinContentPages = parseCount(overview.thin_content_pages);
+      if (thinContentPages > 0) {
+        actions.push({
+          key: "thin_content",
+          title: "Tynt innhold",
+          impact: "medium",
+          count: thinContentPages,
+          description: "Sider med lite innhold kan få svak tematisk relevans.",
+          action: "Utvid med konkret innhold: tjenester, lokasjon, FAQ, priser/prosess og interne lenker.",
+          examples: await getExampleUrls("COALESCE(word_count, 0) > 0 AND word_count < 300"),
+        });
+      }
+
+      const slowPages = parseCount(overview.slow_pages);
+      if (slowPages > 0) {
+        actions.push({
+          key: "slow_pages",
+          title: "Trege sider",
+          impact: "medium",
+          count: slowPages,
+          description: "Sakte sider kan påvirke både Core Web Vitals og konvertering negativt.",
+          action: "Optimaliser bilder/video, reduser tung JS og prioriter innhold over folden.",
+          examples: await getExampleUrls("response_time_ms > 2000"),
+        });
+      }
+
+      const missingCanonicalPages = parseCount(overview.missing_canonical_pages);
+      if (missingCanonicalPages > 0) {
+        actions.push({
+          key: "missing_canonical",
+          title: "Mangler canonical",
+          impact: "low",
+          count: missingCanonicalPages,
+          description: "Canonical hjelper søkemotorer å forstå foretrukket URL ved duplisert/likt innhold.",
+          action: "Legg self-referencing canonical på viktige sider.",
+          examples: await getExampleUrls("COALESCE(canonical_url, '') = ''"),
+        });
+      }
+
+      const pagesWithMissingAlt = parseCount(overview.pages_with_images_missing_alt);
+      if (pagesWithMissingAlt > 0) {
+        actions.push({
+          key: "images_missing_alt",
+          title: "Bilder uten alt-tekst",
+          impact: "low",
+          count: pagesWithMissingAlt,
+          description: "Mangler alt-tekst svekker tilgjengelighet og bildekontekst for søkemotorer.",
+          action: "Legg beskrivende alt-tekst på viktige bilder, spesielt hero og portfolio-bilder.",
+          examples: await getExampleUrls("COALESCE(images_without_alt, 0) > 0"),
+        });
+      }
+
+      const missingOgPages = parseCount(overview.missing_og_title_pages)
+        + parseCount(overview.missing_og_description_pages)
+        + parseCount(overview.missing_og_image_pages);
+
+      if (missingOgPages > 0) {
+        actions.push({
+          key: "missing_open_graph",
+          title: "Mangler Open Graph-data",
+          impact: "low",
+          count: missingOgPages,
+          description: "OG-tags forbedrer deling på sosiale flater og gir bedre presentasjon i lenkeforhåndsvisninger.",
+          action: "Legg inn og vedlikehold og:title, og:description og og:image på sentrale sider.",
+          examples: await getExampleUrls(
+            "COALESCE(og_tags->>'og:title', '') = '' OR COALESCE(og_tags->>'og:description', '') = '' OR COALESCE(og_tags->>'og:image', '') = ''",
+          ),
+        });
+      }
+
+      const impactOrder: Record<SeoImpact, number> = { high: 0, medium: 1, low: 2 };
+      actions.sort((a, b) => {
+        const impactDiff = impactOrder[a.impact] - impactOrder[b.impact];
+        if (impactDiff !== 0) return impactDiff;
+        return b.count - a.count;
+      });
+
+      const totalPages = parseCount(overview.total_html_pages);
+      const response = {
+        generatedAt: new Date().toISOString(),
+        job: {
+          id: jobResult.rows[0].id,
+          targetUrl: jobResult.rows[0].target_url,
+          status: jobResult.rows[0].status,
+        },
+        overview: {
+          totalPages,
+          seoHealthScore: scoreSeoHealth(totalPages, actions),
+          errorPages,
+          nonIndexablePages,
+          missingTitlePages,
+          missingMetaDescriptionPages,
+          thinContentPages,
+          slowPages,
+          pagesWithMissingAlt,
+          imagesMissingAltTotal: parseCount(overview.images_missing_alt_total),
+        },
+        actions,
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error("Error generating SEO insights:", error);
+      res.status(500).json({ error: "Failed to generate SEO insights" });
     }
   });
 
