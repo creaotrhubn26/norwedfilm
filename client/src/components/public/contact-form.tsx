@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Mail, Phone, MapPin, Send, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import ringImage from "@/assets/images/giftering.jpg";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -99,6 +100,17 @@ export function ContactForm({
               {subtitle}
             </p>
 
+            <div className="mb-8 rounded-md overflow-hidden border border-border bg-card">
+              <img
+                src={ringImage}
+                alt="Detaljbilde av gifteringer"
+                className="w-full h-56 object-cover"
+              />
+              <p className="px-4 py-3 text-sm text-muted-foreground">
+                Klar for å planlegge dagen deres? Send en melding — vi svarer raskt.
+              </p>
+            </div>
+
             <div className="space-y-6">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
@@ -106,7 +118,14 @@ export function ContactForm({
                 </div>
                 <div>
                   <h4 className="font-medium mb-1">Email</h4>
-                  <p className="text-muted-foreground text-sm">{email}</p>
+                  <a
+                    href={`mailto:${email}`}
+                    className="text-muted-foreground text-sm hover:text-foreground transition-colors"
+                    aria-label="Send e-post"
+                    title="Send e-post"
+                  >
+                    {email}
+                  </a>
                 </div>
               </div>
 
@@ -116,7 +135,14 @@ export function ContactForm({
                 </div>
                 <div>
                   <h4 className="font-medium mb-1">Phone</h4>
-                  <p className="text-muted-foreground text-sm">{phone}</p>
+                  <a
+                    href={`tel:${(phone || "").replace(/\s+/g, "")}`}
+                    className="text-muted-foreground text-sm hover:text-foreground transition-colors"
+                    aria-label="Ring oss"
+                    title="Ring oss"
+                  >
+                    {phone}
+                  </a>
                 </div>
               </div>
 

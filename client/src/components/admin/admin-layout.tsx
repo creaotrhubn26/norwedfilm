@@ -17,7 +17,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      window.location.href = "/api/login";
+      window.location.href = "/admin/login";
     }
   }, [isLoading, isAuthenticated]);
 

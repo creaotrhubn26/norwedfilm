@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Save, KeyRound, Copy } from "lucide-react";
+import { Loader2, Save, KeyRound, Copy, PlugZap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { SiteSetting } from "@shared/schema";
@@ -44,6 +44,19 @@ interface RotateApiKeyResponse {
   rotatedAt: string;
 }
 
+interface SupabaseStatus {
+  connected: boolean;
+  configured: boolean;
+  message: string;
+}
+
+interface SupabaseSyncResponse {
+  success: boolean;
+  contactsSynced: number;
+  subscribersSynced: number;
+  errors: string[];
+}
+
 export default function AdminSettings() {
   const { toast } = useToast();
   const [rotatedApiKey, setRotatedApiKey] = useState<string | null>(null);
@@ -67,6 +80,10 @@ export default function AdminSettings() {
 
   const { data: apiKeyStatus } = useQuery<ApiKeyStatus>({
     queryKey: ["/api/admin/api-key/status"],
+  });
+
+  const { data: supabaseStatus, isLoading: isSupabaseLoading } = useQuery<SupabaseStatus>({
+    queryKey: ["/api/admin/integrations/supabase/status"],
   });
 
   useEffect(() => {
@@ -112,6 +129,59 @@ export default function AdminSettings() {
     },
     onError: () => {
       toast({ title: "Rotasjon feilet", description: "Kunne ikke rotere API key.", variant: "destructive" });
+    },
+  });
+
+  const testSupabaseMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/integrations/supabase/test");
+      return response.json() as Promise<SupabaseStatus>;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["/api/admin/integrations/supabase/status"], data);
+      toast({
+        title: data.connected ? "Supabase connected" : "Supabase connection issue",
+        description: data.message,
+        variant: data.connected ? "default" : "destructive",
+      });
+    },
+    onError: () => {
+      toast({ title: "Test failed", description: "Could not test Supabase connection", variant: "destructive" });
+    },
+  });
+
+  const testSupabaseGoogleOAuthMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/integrations/supabase/test-google-oauth");
+      return response.json() as Promise<SupabaseStatus>;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.connected ? "Google OAuth connected" : "Google OAuth issue",
+        description: data.message,
+        variant: data.connected ? "default" : "destructive",
+      });
+    },
+    onError: () => {
+      toast({ title: "Test failed", description: "Could not test Google OAuth", variant: "destructive" });
+    },
+  });
+
+  const syncSupabaseMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/integrations/supabase/sync");
+      return response.json() as Promise<SupabaseSyncResponse>;
+    },
+    onSuccess: (data) => {
+      const hasErrors = data.errors.length > 0;
+      toast({
+        title: hasErrors ? "Sync completed with warnings" : "Sync completed",
+        description: `Contacts: ${data.contactsSynced}, Subscribers: ${data.subscribersSynced}${hasErrors ? `, Errors: ${data.errors.length}` : ""}`,
+        variant: hasErrors ? "destructive" : "default",
+      });
+    },
+    onError: () => {
+      toast({ title: "Sync failed", description: "Could not sync data to Supabase", variant: "destructive" });
     },
   });
 
@@ -294,6 +364,70 @@ export default function AdminSettings() {
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PlugZap className="w-5 h-5" />
+                  Supabase Integration
+                </CardTitle>
+                <CardDescription>
+                  Connection status for Supabase using configured environment variables.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>Status: <span className="font-medium text-foreground">{isSupabaseLoading ? "Checking..." : supabaseStatus?.connected ? "Connected" : "Disconnected"}</span></p>
+                  <p>Configured: <span className="font-medium text-foreground">{isSupabaseLoading ? "Checking..." : supabaseStatus?.configured ? "Yes" : "No"}</span></p>
+                  <p>Message: <span className="font-medium text-foreground">{isSupabaseLoading ? "Checking..." : supabaseStatus?.message || "Unknown"}</span></p>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => testSupabaseMutation.mutate()}
+                  disabled={testSupabaseMutation.isPending}
+                  data-testid="button-test-supabase"
+                >
+                  {testSupabaseMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <PlugZap className="w-4 h-4 mr-2" />
+                  )}
+                  Test Supabase connection
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => testSupabaseGoogleOAuthMutation.mutate()}
+                  disabled={testSupabaseGoogleOAuthMutation.isPending}
+                  data-testid="button-test-supabase-google-oauth"
+                >
+                  {testSupabaseGoogleOAuthMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <PlugZap className="w-4 h-4 mr-2" />
+                  )}
+                  Test Google OAuth via Supabase
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => syncSupabaseMutation.mutate()}
+                  disabled={syncSupabaseMutation.isPending}
+                  data-testid="button-sync-supabase"
+                >
+                  {syncSupabaseMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <PlugZap className="w-4 h-4 mr-2" />
+                  )}
+                  Sync contacts and subscribers
+                </Button>
               </CardContent>
             </Card>
 

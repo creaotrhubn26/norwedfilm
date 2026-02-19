@@ -21,6 +21,7 @@ import {
   Handshake,
   Globe,
 } from "lucide-react";
+import evendiLogo from "@/assets/images/Evendi_logo_norsk_tagline.png";
 
 const features = [
   {
@@ -83,9 +84,13 @@ export default function EvendiPage() {
             <Globe className="w-4 h-4" />
             Norwedfilm er samarbeidspartner med Evendi
           </div>
-          <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-light mb-6">
-            Evendi
-          </h1>
+          <div className="mb-6 flex justify-center">
+            <img
+              src={evendiLogo}
+              alt="Evendi"
+              className="h-auto w-full max-w-[360px] md:max-w-[460px]"
+            />
+          </div>
           <p className="text-muted-foreground text-lg md:text-xl max-w-3xl mx-auto leading-relaxed mb-4">
             Evendi kobler bedrifter, venues og leverandører i ett samlet
             økosystem. Plattformen muliggjør matching, booking, kontrakt og

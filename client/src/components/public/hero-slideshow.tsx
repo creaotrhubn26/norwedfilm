@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 import type { HeroSlide } from "@shared/schema";
+import heroImage from "@/assets/images/Indisk-brudepar-Norge.jpg";
 
 const fallbackSlides = [
   {
     id: "1",
-    imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?w=1920",
+    imageUrl: heroImage,
     title: "Love Stories",
     subtitle: "Elegantly Told",
     ctaText: "Book Us",
@@ -103,6 +104,8 @@ export function HeroSlideshow() {
           <button
             key={index}
             onClick={() => setCurrentSlide(index)}
+            aria-label={`Gå til slide ${index + 1}`}
+            title={`Slide ${index + 1}`}
             className={cn(
               "w-2 h-2 rounded-full transition-all duration-300",
               index === currentSlide

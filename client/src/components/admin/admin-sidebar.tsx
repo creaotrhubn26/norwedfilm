@@ -22,6 +22,7 @@ import {
   Star,
   Settings,
   Sliders,
+  Search,
   ExternalLink,
   LogOut,
 } from "lucide-react";
@@ -41,6 +42,7 @@ const menuItems = [
   { href: "/admin/reviews", label: "Reviews", icon: Star },
   { href: "/admin/hero", label: "Hero Slides", icon: Sliders },
   { href: "/admin/visual-editor", label: "Visual Editor", icon: LayoutDashboard },
+  { href: "/admin/crawler", label: "SEO Crawler", icon: Search },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

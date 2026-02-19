@@ -1,14 +1,14 @@
 import { useEffect } from "react";
-import { VisualBuilder } from "@/components/cms/visual-builder";
+import { PowerVisualEditor } from "@/components/cms/power-visual-editor";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 
 export default function AdminVisualEditor() {
-  const { isLoading, isAuthenticated, logout } = useAuth();
+  const { isLoading, isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      window.location.href = "/api/login";
+      window.location.href = "/admin/login";
     }
   }, [isLoading, isAuthenticated]);
 
@@ -24,5 +24,5 @@ export default function AdminVisualEditor() {
     return null;
   }
 
-  return <VisualBuilder onLogout={() => logout()} />;
+  return <PowerVisualEditor />;
 }

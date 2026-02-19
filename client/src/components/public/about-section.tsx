@@ -1,6 +1,7 @@
 import { Camera, Film, Award, Heart } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
+import ringImage from "@/assets/images/giftering.jpg";
 
 const features = [
   {
@@ -126,9 +127,11 @@ export function AboutPageContent() {
             </div>
           </div>
           <div className="aspect-[4/5] rounded-md overflow-hidden bg-muted">
-            <div className="w-full h-full bg-gradient-to-br from-accent to-muted flex items-center justify-center">
-              <span className="font-serif text-4xl text-muted-foreground/30">Photo</span>
-            </div>
+            <img
+              src={ringImage}
+              alt="Detaljbilde av gifteringer"
+              className="w-full h-full object-cover"
+            />
           </div>
         </div>
       </section>

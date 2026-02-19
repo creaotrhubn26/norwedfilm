@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import evendiLogo from "@/assets/images/Evendi_logo_norsk_tagline.png";
 
 type SimpleNavLink = { href: string; label: string };
 type DropdownNavLink = { label: string; children: SimpleNavLink[] };
@@ -139,7 +140,11 @@ export function Navigation() {
                     )}
                     data-testid={`link-${link.label.toLowerCase()}`}
                   >
-                    {link.label}
+                    {link.href === "/evendi" ? (
+                      <img src={evendiLogo} alt="Evendi" className="h-6 w-auto" />
+                    ) : (
+                      link.label
+                    )}
                   </span>
                 </Link>
               )
@@ -199,7 +204,11 @@ export function Navigation() {
                     onClick={() => setIsMobileMenuOpen(false)}
                     data-testid={`mobile-link-${link.label.toLowerCase()}`}
                   >
-                    {link.label}
+                    {link.href === "/evendi" ? (
+                      <img src={evendiLogo} alt="Evendi" className="h-6 w-auto" />
+                    ) : (
+                      link.label
+                    )}
                   </span>
                 </Link>
               )

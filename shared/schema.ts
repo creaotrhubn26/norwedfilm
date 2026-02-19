@@ -251,3 +251,6 @@ export const insertBlockedDateSchema = createInsertSchema(blockedDates).omit({
 });
 export type InsertBlockedDate = z.infer<typeof insertBlockedDateSchema>;
 export type BlockedDate = typeof blockedDates.$inferSelect;
+
+// Compatibility type used by imported CMS components
+export type CaseReport = Record<string, any>;

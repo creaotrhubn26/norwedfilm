@@ -27,6 +27,9 @@ import AdminSubscribers from "@/pages/admin/subscribers";
 import AdminGalleries from "@/pages/admin/galleries";
 import AdminBookings from "@/pages/admin/bookings";
 import AdminVisualEditor from "@/pages/admin/visual-editor";
+import AdminCrawler from "@/pages/admin/crawler";
+import AdminLogin from "@/pages/admin/login";
+import AdminLoginCallback from "@/pages/admin/login-callback";
 
 function Router() {
   return (
@@ -38,6 +41,9 @@ function Router() {
       <Route path="/reviews" component={ReviewsPage} />
       <Route path="/evendi" component={EvendiPage} />
       <Route path="/project/:slug" component={ProjectPage} />
+
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/login/callback" component={AdminLoginCallback} />
       
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/projects" component={AdminProjects} />
@@ -52,6 +58,7 @@ function Router() {
       <Route path="/admin/galleries" component={AdminGalleries} />
       <Route path="/admin/bookings" component={AdminBookings} />
       <Route path="/admin/visual-editor" component={AdminVisualEditor} />
+      <Route path="/admin/crawler" component={AdminCrawler} />
       
       <Route component={NotFound} />
     </Switch>

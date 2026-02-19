@@ -3,11 +3,23 @@ import { createServer, type Server } from "http";
 import fs from "fs";
 import path from "path";
 import multer from "multer";
+import sharp from "sharp";
 import { randomBytes, randomUUID } from "crypto";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 import { storage } from "./storage";
+import { pool } from "./db";
 import { setupAuth, registerAuthRoutes, isAuthenticated, isApiKeyAuthenticated } from "./auth";
+import { registerCrawlerRoutes } from "./crawler-routes";
+import {
+  getSupabaseConnectionStatus,
+  getSupabaseGoogleOAuthStatus,
+  upsertContactToSupabase,
+  deleteContactFromSupabase,
+  upsertSubscriberToSupabase,
+  deleteSubscriberFromSupabase,
+  syncNorwedfilmDataToSupabase,
+} from "./supabase";
 import {
   insertProjectSchema,
   insertMediaSchema,
@@ -20,6 +32,33 @@ import {
   insertBlockedDateSchema,
 } from "@shared/schema";
 import { z } from "zod";
+
+async function ensureBlogCommentsTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS blog_comments (
+      id SERIAL PRIMARY KEY,
+      post_id VARCHAR NOT NULL REFERENCES blog_posts(id) ON DELETE CASCADE,
+      parent_id INTEGER REFERENCES blog_comments(id) ON DELETE CASCADE,
+      author_name TEXT NOT NULL,
+      author_email TEXT,
+      author_url TEXT,
+      content TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      ip_address TEXT,
+      user_agent TEXT,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_blog_comments_post_id ON blog_comments(post_id);
+    CREATE INDEX IF NOT EXISTS idx_blog_comments_status ON blog_comments(status);
+    CREATE INDEX IF NOT EXISTS idx_blog_comments_parent_id ON blog_comments(parent_id);
+  `);
+}
+
+function stripHtml(value: string | null | undefined) {
+  return (value || "").replace(/<[^>]+>/g, "").trim();
+}
 
 const subscriberStatusSchema = z.object({
   status: z.enum(["active", "unsubscribed"]),
@@ -123,6 +162,11 @@ const cmsActivitySchema = z.object({
   created_at: z.string(),
 });
 
+const cmsExportSchema = z.object({
+  format: z.enum(["react", "html", "tailwind", "json"]).default("json"),
+  sections: z.array(z.any()).default([]),
+});
+
 function parseJsonValue<T>(value: string | null | undefined, fallback: T): T {
   if (!value) return fallback;
   try {
@@ -138,6 +182,245 @@ function getNextNumericId(items: Array<{ id?: string | number }>): number {
     return Number.isFinite(num) ? Math.max(max, num) : max;
   }, 0);
   return maxId + 1;
+}
+
+function getGalleryAspectRatio(aspectRatio?: string): string {
+  if (aspectRatio === "16:9") return "16 / 9";
+  if (aspectRatio === "1:1") return "1 / 1";
+  if (aspectRatio === "3:4") return "3 / 4";
+  return "4 / 3";
+}
+
+function getGalleryObjectFit(imageFit?: string): string {
+  return imageFit === "contain" ? "contain" : "cover";
+}
+
+function getGalleryAnimationAdvanced(content?: any) {
+  return {
+    durationSec: 14,
+    delayStepMs: 120,
+    easing: "ease-in-out",
+    panScaleStart: 1.02,
+    panScaleEnd: 1.12,
+    panXStart: -1.5,
+    panXEnd: 1.5,
+    revealYOffsetPx: 14,
+    revealScaleStart: 1.03,
+    floatAmplitudePx: 8,
+    ...(content?.imageAnimationAdvanced || {}),
+  };
+}
+
+function getGalleryAnimationStyle(imageAnimation?: string, index = 0, advanced?: any): string {
+  const config = {
+    durationSec: 14,
+    delayStepMs: 120,
+    easing: "ease-in-out",
+    ...advanced,
+  };
+
+  if (imageAnimation === "cinematic-pan") {
+    return `tidum-cinematic-pan ${config.durationSec}s ${config.easing} ${index * config.delayStepMs}ms infinite alternate`;
+  }
+  if (imageAnimation === "cinematic-reveal") {
+    return `tidum-cinematic-reveal ${Math.max(0.2, Number(config.durationSec) || 0.9)}s ${config.easing} ${index * config.delayStepMs}ms both`;
+  }
+  if (imageAnimation === "soft-float") {
+    return `tidum-soft-float ${config.durationSec}s ${config.easing} ${index * config.delayStepMs}ms infinite`;
+  }
+  return "";
+}
+
+function getGalleryAnimationVarsReact(imageAnimation?: string, advanced?: any): string {
+  const config = {
+    panScaleStart: 1.02,
+    panScaleEnd: 1.12,
+    panXStart: -1.5,
+    panXEnd: 1.5,
+    revealYOffsetPx: 14,
+    revealScaleStart: 1.03,
+    floatAmplitudePx: 8,
+    ...advanced,
+  };
+
+  if (imageAnimation === "cinematic-pan") {
+    return `, ['--tidum-pan-scale-start' as any]: '${config.panScaleStart}', ['--tidum-pan-scale-end' as any]: '${config.panScaleEnd}', ['--tidum-pan-x-start' as any]: '${config.panXStart}%', ['--tidum-pan-x-end' as any]: '${config.panXEnd}%'`;
+  }
+  if (imageAnimation === "cinematic-reveal") {
+    return `, ['--tidum-reveal-y' as any]: '${config.revealYOffsetPx}px', ['--tidum-reveal-scale-start' as any]: '${config.revealScaleStart}'`;
+  }
+  if (imageAnimation === "soft-float") {
+    return `, ['--tidum-float-y' as any]: '${config.floatAmplitudePx}px'`;
+  }
+  return "";
+}
+
+function getGalleryAnimationVarsHtml(imageAnimation?: string, advanced?: any): string {
+  const config = {
+    panScaleStart: 1.02,
+    panScaleEnd: 1.12,
+    panXStart: -1.5,
+    panXEnd: 1.5,
+    revealYOffsetPx: 14,
+    revealScaleStart: 1.03,
+    floatAmplitudePx: 8,
+    ...advanced,
+  };
+
+  if (imageAnimation === "cinematic-pan") {
+    return `--tidum-pan-scale-start:${config.panScaleStart};--tidum-pan-scale-end:${config.panScaleEnd};--tidum-pan-x-start:${config.panXStart}%;--tidum-pan-x-end:${config.panXEnd}%;`;
+  }
+  if (imageAnimation === "cinematic-reveal") {
+    return `--tidum-reveal-y:${config.revealYOffsetPx}px;--tidum-reveal-scale-start:${config.revealScaleStart};`;
+  }
+  if (imageAnimation === "soft-float") {
+    return `--tidum-float-y:${config.floatAmplitudePx}px;`;
+  }
+  return "";
+}
+
+function generateServerExportCode(format: "react" | "html" | "tailwind" | "json", sections: any[]): string {
+  if (format === "json") {
+    return JSON.stringify(
+      {
+        version: "1.0.0",
+        generatedAt: new Date().toISOString(),
+        sections,
+      },
+      null,
+      2,
+    );
+  }
+
+  if (format === "html") {
+    const htmlSections = sections
+      .map((section: any, idx: number) => {
+        const galleryHtml = section.content?.images && Array.isArray(section.content.images)
+          ? `<div style="display:grid;gap:8px;grid-template-columns:repeat(${section.content.cols || 3},1fr);margin-top:16px;">\n${section.content.images
+              .map((img: any, i: number) => {
+                const aspectRatio = getGalleryAspectRatio(section.content?.aspectRatio);
+                const objectFit = getGalleryObjectFit(section.content?.imageFit);
+                const animationAdvanced = getGalleryAnimationAdvanced(section.content);
+                const animationStyle = getGalleryAnimationStyle(section.content?.imageAnimation, i, animationAdvanced);
+                const animationVars = getGalleryAnimationVarsHtml(section.content?.imageAnimation, animationAdvanced);
+                const caption = img.caption || img.alt;
+                const showCaptions = section.content?.showCaptions !== false;
+
+                return `  <figure style="border:1px solid #E1E4E3;border-radius:12px;overflow:hidden;margin:0;">\n    <img src="${img.src || ""}" alt="${img.alt || `Galleri-bilde ${i + 1}`}" style="width:100%;aspect-ratio:${aspectRatio};object-fit:${objectFit};${objectFit === "contain" ? "background:#F8F9F7;" : ""}${animationStyle ? `animation:${animationStyle};` : ""}${animationVars}" />\n${showCaptions && caption ? `    <figcaption style="padding:8px 12px;font-size:12px;color:#6B7280;background:rgba(255,255,255,0.85);">${caption}</figcaption>\n` : ""}  </figure>`;
+              })
+              .join("\n")}</div>`
+          : "<!-- Add your content here -->";
+
+        return `<section class="section-${idx}">\n  <span class="badge">${section.type || "section"}</span>\n  <h2>${section.title || "Untitled"}</h2>\n  <div class="content">\n    ${galleryHtml}\n  </div>\n</section>`;
+      })
+      .join("\n\n");
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Landing Page</title>
+  <style>
+    @keyframes tidum-cinematic-pan {
+      0% { transform: scale(var(--tidum-pan-scale-start, 1.02)) translateX(var(--tidum-pan-x-start, -1.5%)); }
+      100% { transform: scale(var(--tidum-pan-scale-end, 1.12)) translateX(var(--tidum-pan-x-end, 1.5%)); }
+    }
+    @keyframes tidum-cinematic-reveal {
+      0% { opacity: 0; transform: translateY(var(--tidum-reveal-y, 14px)) scale(var(--tidum-reveal-scale-start, 1.03)); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes tidum-soft-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(calc(var(--tidum-float-y, 8px) * -1)); }
+    }
+  </style>
+</head>
+<body>
+${htmlSections}
+</body>
+</html>`;
+  }
+
+  if (format === "tailwind") {
+    const components = sections
+      .map((section: any) => {
+        const galleryJsx = section.content?.images && Array.isArray(section.content.images)
+          ? `  <div className="mt-4 grid gap-2" style={{ gridTemplateColumns: 'repeat(${section.content.cols || 3}, 1fr)' }}>
+${section.content.images
+  .map((img: any, i: number) => {
+    const aspectRatio = getGalleryAspectRatio(section.content?.aspectRatio);
+    const objectFit = getGalleryObjectFit(section.content?.imageFit);
+    const animationAdvanced = getGalleryAnimationAdvanced(section.content);
+    const animationStyle = getGalleryAnimationStyle(section.content?.imageAnimation, i, animationAdvanced);
+    const animationVarStyle = getGalleryAnimationVarsReact(section.content?.imageAnimation, animationAdvanced);
+    const caption = img.caption || img.alt;
+    const showCaptions = section.content?.showCaptions !== false;
+
+    return `    <figure key="${i}" className="rounded-xl border overflow-hidden">\n      <img src={${JSON.stringify(img.src || "")}} alt={${JSON.stringify(img.alt || `Galleri-bilde ${i + 1}`)}} style={{ width: '100%', aspectRatio: '${aspectRatio}', objectFit: '${objectFit}'${objectFit === "contain" ? ", background: '#F8F9F7'" : ""}${animationStyle ? `, animation: '${animationStyle}'` : ""}${animationVarStyle} }} />\n${showCaptions && caption ? `      <figcaption className="px-3 py-2 text-xs text-muted-foreground bg-white/80">{${JSON.stringify(caption)}}</figcaption>\n` : ""}    </figure>`;
+  })
+  .join("\n")}
+  </div>`
+          : "  <div className=\"content\">{/* Add your content here */}</div>";
+
+        return `<section className=\"py-12 px-6\">\n  <span className=\"inline-block px-3 py-1 bg-gray-100 rounded text-sm\">${section.type || "section"}</span>\n  <h2 className=\"text-3xl font-bold mt-4\">${section.title || "Untitled"}</h2>\n${galleryJsx}\n</section>`;
+      })
+      .join("\n\n");
+
+    return `import React from 'react';
+
+export function LandingPage() {
+  return (
+    <div className="landing-page">
+${components}
+    </div>
+  );
+}`;
+  }
+
+  const reactSections = sections
+    .map((section: any, idx: number) => {
+      const galleryJsx = section.content?.images && Array.isArray(section.content.images)
+        ? `      <div className="mt-4 grid gap-2" style={{ gridTemplateColumns: 'repeat(${section.content.cols || 3}, 1fr)' }}>
+${section.content.images
+  .map((img: any, i: number) => {
+    const aspectRatio = getGalleryAspectRatio(section.content?.aspectRatio);
+    const objectFit = getGalleryObjectFit(section.content?.imageFit);
+    const animationAdvanced = getGalleryAnimationAdvanced(section.content);
+    const animationStyle = getGalleryAnimationStyle(section.content?.imageAnimation, i, animationAdvanced);
+    const animationVarStyle = getGalleryAnimationVarsReact(section.content?.imageAnimation, animationAdvanced);
+    const caption = img.caption || img.alt;
+    const showCaptions = section.content?.showCaptions !== false;
+
+    return `        <figure key="${i}" className="rounded-xl border overflow-hidden">\n          <img src={${JSON.stringify(img.src || "")}} alt={${JSON.stringify(img.alt || `Galleri-bilde ${i + 1}`)}} style={{ width: '100%', aspectRatio: '${aspectRatio}', objectFit: '${objectFit}'${objectFit === "contain" ? ", background: '#F8F9F7'" : ""}${animationStyle ? `, animation: '${animationStyle}'` : ""}${animationVarStyle} }} />\n${showCaptions && caption ? `          <figcaption className="px-3 py-2 text-xs text-muted-foreground bg-background/80">{${JSON.stringify(caption)}}</figcaption>\n` : ""}        </figure>`;
+  })
+  .join("\n")}
+      </div>`
+        : "      {/* Add your content here */}";
+
+      return `function Section${idx}() {
+  return (
+    <section className="py-12 px-6">
+      <span className="inline-block px-3 py-1 bg-gray-100 rounded text-sm">${section.type || "section"}</span>
+      <h2 className="text-3xl font-bold mt-4">${section.title || "Untitled"}</h2>
+${galleryJsx}
+    </section>
+  );
+}`;
+    })
+    .join("\n\n");
+
+  return `import React from 'react';
+
+${reactSections}
+
+export function LandingPage() {
+  return (
+    <main>
+${sections.map((_s: any, idx: number) => `      <Section${idx} />`).join("\n")}
+    </main>
+  );
+}`;
 }
 
 async function getCmsContentTypes() {
@@ -315,6 +598,72 @@ async function generateVideoThumbnail(videoPath: string, sourceFilename: string)
   });
 }
 
+interface OptimizedUploadResult {
+  url: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  originalSize: number;
+  optimized: boolean;
+  format: string;
+  width?: number;
+  height?: number;
+  savings: number;
+}
+
+async function optimizeUploadedImage(file: Express.Multer.File): Promise<OptimizedUploadResult> {
+  const sourcePath = file.path;
+  const originalSize = file.size;
+  const parsed = path.parse(file.filename);
+  const optimizedFilename = `${parsed.name}.webp`;
+  const optimizedPath = path.join(uploadsDir, optimizedFilename);
+
+  try {
+    const sourceMeta = await sharp(sourcePath).metadata();
+    let pipeline = sharp(sourcePath).rotate();
+
+    if ((sourceMeta.width ?? 0) > 3200) {
+      pipeline = pipeline.resize({ width: 3200, withoutEnlargement: true });
+    }
+
+    await pipeline.webp({ quality: 90, effort: 6, smartSubsample: true }).toFile(optimizedPath);
+
+    const optimizedMeta = await sharp(optimizedPath).metadata();
+    const optimizedStat = await fs.promises.stat(optimizedPath);
+    await fs.promises.unlink(sourcePath).catch(() => undefined);
+
+    const savings = originalSize > 0
+      ? Math.max(0, Math.round(((originalSize - optimizedStat.size) / originalSize) * 100))
+      : 0;
+
+    return {
+      url: `/uploads/${optimizedFilename}`,
+      filename: optimizedFilename,
+      mimeType: "image/webp",
+      size: optimizedStat.size,
+      originalSize,
+      optimized: true,
+      format: "webp",
+      width: optimizedMeta.width,
+      height: optimizedMeta.height,
+      savings,
+    };
+  } catch (error) {
+    console.warn("Image optimization failed, using original file:", error);
+    const fallbackFormat = file.mimetype.split("/")[1] || path.extname(file.originalname).replace(".", "") || "unknown";
+    return {
+      url: `/uploads/${file.filename}`,
+      filename: file.filename,
+      mimeType: file.mimetype,
+      size: originalSize,
+      originalSize,
+      optimized: false,
+      format: fallbackFormat,
+      savings: 0,
+    };
+  }
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -322,6 +671,8 @@ export async function registerRoutes(
   // Setup authentication
   await setupAuth(app);
   registerAuthRoutes(app);
+  await ensureBlogCommentsTable();
+  await registerCrawlerRoutes(app, isAuthenticated);
 
   app.get("/api/admin/auth/health", isApiKeyAuthenticated, (_req, res) => {
     res.json({
@@ -349,6 +700,196 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching projects:", error);
       res.status(500).json({ message: "Failed to fetch projects" });
+    }
+  });
+
+  // Blog (public)
+  app.get("/api/blog", async (req, res) => {
+    try {
+      const page = Math.max(parseInt(req.query.page as string, 10) || 1, 1);
+      const limit = Math.min(parseInt(req.query.limit as string, 10) || 12, 50);
+      const offset = (page - 1) * limit;
+      const q = ((req.query.q as string) || "").trim();
+      const category = ((req.query.category as string) || "").trim();
+
+      let where = "WHERE published = true";
+      const params: any[] = [];
+
+      if (q) {
+        params.push(`%${q}%`);
+        where += ` AND (title ILIKE $${params.length} OR excerpt ILIKE $${params.length} OR content ILIKE $${params.length})`;
+      }
+
+      if (category) {
+        params.push(category);
+        where += ` AND category = $${params.length}`;
+      }
+
+      const totalResult = await pool.query(`SELECT COUNT(*)::int AS c FROM blog_posts ${where}`, params);
+      const total = totalResult.rows[0]?.c ?? 0;
+
+      params.push(limit, offset);
+      const postsResult = await pool.query(
+        `SELECT * FROM blog_posts ${where}
+         ORDER BY COALESCE(published_at, created_at) DESC
+         LIMIT $${params.length - 1} OFFSET $${params.length}`,
+        params,
+      );
+
+      res.json({
+        posts: postsResult.rows,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching blog posts:", error);
+      res.status(500).json({ message: "Failed to fetch blog posts" });
+    }
+  });
+
+  app.get("/api/blog/:slug", async (req, res) => {
+    try {
+      const post = await storage.getBlogPostBySlug(req.params.slug);
+      if (!post || !post.published) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      res.json(post);
+    } catch (error) {
+      console.error("Error fetching blog post:", error);
+      res.status(500).json({ message: "Failed to fetch blog post" });
+    }
+  });
+
+  app.get("/api/blog/:slug/related", async (req, res) => {
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string, 10) || 3, 10);
+      const post = await storage.getBlogPostBySlug(req.params.slug);
+      if (!post) {
+        return res.json([]);
+      }
+
+      const related = await pool.query(
+        `SELECT * FROM blog_posts
+         WHERE published = true
+           AND id <> $1
+           AND (category = $2 OR $2 IS NULL)
+         ORDER BY COALESCE(published_at, created_at) DESC
+         LIMIT $3`,
+        [post.id, post.category, limit],
+      );
+
+      res.json(related.rows);
+    } catch (error) {
+      console.error("Error fetching related blog posts:", error);
+      res.status(500).json({ message: "Failed to fetch related blog posts" });
+    }
+  });
+
+  app.get("/api/blog/:slug/comments", async (req, res) => {
+    try {
+      const post = await storage.getBlogPostBySlug(req.params.slug);
+      if (!post) {
+        return res.json([]);
+      }
+
+      const result = await pool.query(
+        `SELECT id, post_id, parent_id, author_name, author_url, content, created_at
+         FROM blog_comments
+         WHERE post_id = $1 AND status = 'approved'
+         ORDER BY created_at ASC`,
+        [post.id],
+      );
+
+      res.json(result.rows);
+    } catch (error) {
+      console.error("Error fetching blog comments:", error);
+      res.status(500).json({ message: "Failed to fetch blog comments" });
+    }
+  });
+
+  app.post("/api/blog/:slug/comments", async (req, res) => {
+    try {
+      const post = await storage.getBlogPostBySlug(req.params.slug);
+      if (!post || !post.published) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      const authorName = String(req.body.author_name || "").trim();
+      const content = String(req.body.content || "").trim();
+
+      if (!authorName || !content) {
+        return res.status(400).json({ message: "author_name and content are required" });
+      }
+
+      const parentId = req.body.parent_id ? Number(req.body.parent_id) : null;
+      const inserted = await pool.query(
+        `INSERT INTO blog_comments (post_id, parent_id, author_name, author_email, author_url, content, status, ip_address, user_agent)
+         VALUES ($1,$2,$3,$4,$5,$6,'pending',$7,$8)
+         RETURNING id, post_id, parent_id, author_name, author_url, content, status, created_at`,
+        [
+          post.id,
+          parentId,
+          authorName,
+          req.body.author_email || null,
+          req.body.author_url || null,
+          content,
+          req.ip || null,
+          req.get("user-agent") || null,
+        ],
+      );
+
+      res.status(201).json(inserted.rows[0]);
+    } catch (error) {
+      console.error("Error creating blog comment:", error);
+      res.status(500).json({ message: "Failed to create blog comment" });
+    }
+  });
+
+  app.get("/feed.xml", async (req, res) => {
+    try {
+      const posts = await storage.getPublishedBlogPosts();
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const now = new Date().toUTCString();
+
+      let rss = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      rss += '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n';
+      rss += '<channel>\n';
+      rss += '  <title>Norwed Film Blog</title>\n';
+      rss += `  <link>${baseUrl}/blog</link>\n`;
+      rss += '  <description>Latest posts from Norwed Film</description>\n';
+      rss += '  <language>en</language>\n';
+      rss += `  <lastBuildDate>${now}</lastBuildDate>\n`;
+      rss += `  <atom:link href="${baseUrl}/feed.xml" rel="self" type="application/rss+xml"/>\n`;
+
+      for (const post of posts) {
+        rss += '  <item>\n';
+        rss += `    <title><![CDATA[${post.title}]]></title>\n`;
+        rss += `    <link>${baseUrl}/blog/${post.slug}</link>\n`;
+        rss += `    <guid isPermaLink="true">${baseUrl}/blog/${post.slug}</guid>\n`;
+        if (post.excerpt) {
+          rss += `    <description><![CDATA[${post.excerpt}]]></description>\n`;
+        } else if (post.content) {
+          rss += `    <description><![CDATA[${stripHtml(post.content).slice(0, 240)}]]></description>\n`;
+        }
+        if (post.author) {
+          rss += `    <author>${post.author}</author>\n`;
+        }
+        if (post.publishedAt) {
+          rss += `    <pubDate>${new Date(post.publishedAt).toUTCString()}</pubDate>\n`;
+        }
+        rss += '  </item>\n';
+      }
+
+      rss += '</channel>\n</rss>';
+      res.set("Content-Type", "application/rss+xml; charset=utf-8");
+      res.send(rss);
+    } catch (error) {
+      console.error("Error generating RSS feed:", error);
+      res.status(500).send("Failed to generate feed");
     }
   });
 
@@ -397,6 +938,11 @@ export async function registerRoutes(
     try {
       const data = insertContactSchema.parse(req.body);
       const contact = await storage.createContact(data);
+
+      void upsertContactToSupabase(contact).catch((error) => {
+        console.error("Supabase contact sync error:", error);
+      });
+
       res.status(201).json(contact);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -560,6 +1106,24 @@ export async function registerRoutes(
       }
       console.error("Error saving CMS sections:", error);
       res.status(500).json({ error: "Failed to save sections" });
+    }
+  });
+
+  app.post("/api/cms/export", isAuthenticated, async (req, res) => {
+    try {
+      const data = cmsExportSchema.parse(req.body);
+      const code = generateServerExportCode(data.format, data.sections || []);
+      res.json({
+        success: true,
+        format: data.format,
+        code,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid export payload", details: error.errors });
+      }
+      console.error("Error generating CMS export:", error);
+      res.status(500).json({ error: "Failed to generate export" });
     }
   });
 
@@ -954,10 +1518,27 @@ export async function registerRoutes(
 
         const uploadedFile = req.file;
         const mediaType = uploadedFile.mimetype.startsWith("video/") ? "video" : "image";
-        const mediaUrl = `/uploads/${uploadedFile.filename}`;
-        const thumbnailUrl = mediaType === "video"
-          ? await generateVideoThumbnail(uploadedFile.path, uploadedFile.filename)
-          : mediaUrl;
+
+        let mediaUrl = `/uploads/${uploadedFile.filename}`;
+        let thumbnailUrl: string | null = null;
+        let responseFilename = uploadedFile.filename;
+        let responseMimeType = uploadedFile.mimetype;
+        let responseSize = uploadedFile.size;
+
+        if (mediaType === "video") {
+          thumbnailUrl = await generateVideoThumbnail(uploadedFile.path, uploadedFile.filename);
+        } else {
+          const optimizedImage = await optimizeUploadedImage(uploadedFile);
+          mediaUrl = optimizedImage.url;
+          thumbnailUrl = optimizedImage.url;
+          responseFilename = optimizedImage.filename;
+          responseMimeType = optimizedImage.mimeType;
+          responseSize = optimizedImage.size;
+        }
+
+        if (!thumbnailUrl) {
+          thumbnailUrl = mediaUrl;
+        }
 
         const created = await storage.createMedia({
           projectId: null,
@@ -978,10 +1559,10 @@ export async function registerRoutes(
 
         return res.status(201).json({
           id: created.id,
-          filename: uploadedFile.filename,
+          filename: responseFilename,
           original_name: uploadedFile.originalname,
-          mime_type: uploadedFile.mimetype,
-          size: uploadedFile.size,
+          mime_type: responseMimeType,
+          size: responseSize,
           url: mediaUrl,
           folder_id: null,
           created_at: created.createdAt,
@@ -989,6 +1570,43 @@ export async function registerRoutes(
       } catch (error) {
         console.error("Error uploading CMS media:", error);
         return res.status(500).json({ error: "Failed to upload media" });
+      }
+    });
+  });
+
+  app.post("/api/cms/upload", isAuthenticated, (req, res) => {
+    upload.single("image")(req, res, async (err: unknown) => {
+      try {
+        if (err) {
+          const message = err instanceof Error ? err.message : "Upload failed";
+          return res.status(400).json({ error: message });
+        }
+
+        if (!req.file) {
+          return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        if (!req.file.mimetype.startsWith("image/")) {
+          return res.status(400).json({ error: "Only image files are allowed" });
+        }
+
+        const optimizedImage = await optimizeUploadedImage(req.file);
+
+        return res.status(201).json({
+          url: optimizedImage.url,
+          thumbnail: optimizedImage.url,
+          filename: optimizedImage.filename,
+          size: optimizedImage.size,
+          originalSize: optimizedImage.originalSize,
+          optimized: optimizedImage.optimized,
+          format: optimizedImage.format,
+          width: optimizedImage.width,
+          height: optimizedImage.height,
+          savings: optimizedImage.savings,
+        });
+      } catch (error) {
+        console.error("Error uploading and optimizing CMS image:", error);
+        return res.status(500).json({ error: "Failed to optimize image" });
       }
     });
   });
@@ -1240,6 +1858,11 @@ export async function registerRoutes(
       if (!contact) {
         return res.status(404).json({ message: "Contact not found" });
       }
+
+      void upsertContactToSupabase(contact).catch((error) => {
+        console.error("Supabase contact status sync error:", error);
+      });
+
       res.json(contact);
     } catch (error) {
       console.error("Error updating contact:", error);
@@ -1250,6 +1873,11 @@ export async function registerRoutes(
   app.delete("/api/admin/contacts/:id", isAuthenticated, async (req, res) => {
     try {
       await storage.deleteContact(String(req.params.id));
+
+      void deleteContactFromSupabase(String(req.params.id)).catch((error) => {
+        console.error("Supabase contact delete sync error:", error);
+      });
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting contact:", error);
@@ -1381,6 +2009,73 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/integrations/supabase/status", isAuthenticated, async (_req, res) => {
+    try {
+      const status = await getSupabaseConnectionStatus();
+      res.json(status);
+    } catch (error) {
+      console.error("Error checking Supabase status:", error);
+      res.status(500).json({
+        connected: false,
+        configured: true,
+        message: "Failed to check Supabase status",
+      });
+    }
+  });
+
+  app.post("/api/admin/integrations/supabase/test", isAuthenticated, async (_req, res) => {
+    try {
+      const status = await getSupabaseConnectionStatus();
+      res.json(status);
+    } catch (error) {
+      console.error("Error testing Supabase connection:", error);
+      res.status(500).json({
+        connected: false,
+        configured: true,
+        message: "Failed to test Supabase connection",
+      });
+    }
+  });
+
+  app.post("/api/admin/integrations/supabase/test-google-oauth", isAuthenticated, async (_req, res) => {
+    try {
+      const status = await getSupabaseGoogleOAuthStatus();
+      res.json(status);
+    } catch (error) {
+      console.error("Error testing Supabase Google OAuth:", error);
+      res.status(500).json({
+        connected: false,
+        configured: true,
+        message: "Failed to test Supabase Google OAuth",
+      });
+    }
+  });
+
+  app.post("/api/admin/integrations/supabase/sync", isAuthenticated, async (_req, res) => {
+    try {
+      const [allContacts, allSubscribers] = await Promise.all([
+        storage.getContacts(),
+        storage.getSubscribers(),
+      ]);
+
+      const result = await syncNorwedfilmDataToSupabase({
+        contacts: allContacts,
+        subscribers: allSubscribers,
+      });
+
+      res.json({
+        success: true,
+        ...result,
+      });
+    } catch (error) {
+      console.error("Error syncing Norwedfilm data to Supabase:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to sync Norwedfilm data to Supabase",
+      });
+    }
+  });
+
   app.get("/api/admin/api-key/status", isAuthenticated, async (_req, res) => {
     try {
       const [apiKeySetting, rotatedAtSetting, rotatedBySetting, rotatedIpSetting] = await Promise.all([
@@ -1497,6 +2192,66 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/cms/comments", isAuthenticated, async (req, res) => {
+    try {
+      const status = ((req.query.status as string) || "").trim();
+      const params: any[] = [];
+      let where = "";
+
+      if (status) {
+        params.push(status);
+        where = `WHERE bc.status = $${params.length}`;
+      }
+
+      const result = await pool.query(
+        `SELECT bc.*, bp.title as post_title, bp.slug as post_slug
+         FROM blog_comments bc
+         JOIN blog_posts bp ON bc.post_id = bp.id
+         ${where}
+         ORDER BY bc.created_at DESC`,
+        params,
+      );
+
+      res.json(result.rows);
+    } catch (error) {
+      console.error("Error fetching blog comments:", error);
+      res.status(500).json({ message: "Failed to fetch blog comments" });
+    }
+  });
+
+  app.put("/api/cms/comments/:id", isAuthenticated, async (req, res) => {
+    try {
+      const status = String(req.body.status || "").trim();
+      if (!status) {
+        return res.status(400).json({ message: "status is required" });
+      }
+
+      const result = await pool.query(
+        "UPDATE blog_comments SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *",
+        [status, req.params.id],
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error("Error updating blog comment:", error);
+      res.status(500).json({ message: "Failed to update blog comment" });
+    }
+  });
+
+  app.delete("/api/cms/comments/:id", isAuthenticated, async (req, res) => {
+    try {
+      await pool.query("DELETE FROM blog_comments WHERE id = $1", [req.params.id]);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting blog comment:", error);
+      res.status(500).json({ message: "Failed to delete blog comment" });
+    }
+  });
+
   // Subscribers
   app.get("/api/admin/subscribers", isAuthenticated, async (_req, res) => {
     try {
@@ -1515,6 +2270,11 @@ export async function registerRoutes(
       if (!subscriber) {
         return res.status(404).json({ message: "Subscriber not found" });
       }
+
+      void upsertSubscriberToSupabase(subscriber).catch((error) => {
+        console.error("Supabase subscriber status sync error:", error);
+      });
+
       res.json(subscriber);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1528,6 +2288,11 @@ export async function registerRoutes(
   app.delete("/api/admin/subscribers/:id", isAuthenticated, async (req, res) => {
     try {
       await storage.deleteSubscriber(String(req.params.id));
+
+      void deleteSubscriberFromSupabase(String(req.params.id)).catch((error) => {
+        console.error("Supabase subscriber delete sync error:", error);
+      });
+
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting subscriber:", error);
