@@ -4,22 +4,39 @@ import { PublicLayout } from "@/components/public/layout";
 import { PortfolioGrid } from "@/components/public/portfolio-grid";
 import type { Project } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSeo } from "@/hooks/use-seo";
 
 export default function PortfolioPage() {
   const params = useParams<{ category: string }>();
   const category = params.category;
   
   const categoryTitle = category === "wedding-photo" 
-    ? "Wedding Photography" 
+    ? "Bryllupsfotografering" 
     : category === "wedding-video"
-      ? "Wedding Videography"
-      : "Portfolio";
+      ? "Bryllupsvideo"
+      : "Portefølje";
 
   const categoryDescription = category === "wedding-photo"
-    ? "Timeless photographs capturing every precious moment of your special day"
+    ? "Tidløse bryllupsbilder som fanger alle de viktige øyeblikkene"
     : category === "wedding-video"
-      ? "Cinematic wedding films that tell your love story with emotion and artistry"
-      : "Our complete collection of wedding photography and videography";
+      ? "Cinematiske bryllupsfilmer som forteller kjærlighetshistorien deres"
+      : "Vår komplette portefølje med bryllupsfoto og bryllupsvideo";
+
+  useSeo({
+    title:
+      category === "wedding-photo"
+        ? "Bryllupsfoto portefølje | Norwed Film"
+        : category === "wedding-video"
+          ? "Bryllupsvideo portefølje | Norwed Film"
+          : "Portefølje | Norwed Film",
+    description:
+      category === "wedding-photo"
+        ? "Se vår portefølje med bryllupsfoto fra Oslo og resten av Norge."
+        : category === "wedding-video"
+          ? "Se vår portefølje med bryllupsvideo fra Oslo og hele Norge."
+          : "Utforsk bryllupsfoto og bryllupsvideo fra Norwed Film i Norge.",
+    canonicalPath: category ? `/portfolio/${category}` : "/portfolio",
+  });
 
   const { data: projects, isLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects", { category }],

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { ArrowLeft, MapPin, Calendar, Play } from "lucide-react";
 import type { Project, Media } from "@shared/schema";
+import { useSeo } from "@/hooks/use-seo";
 
 export default function ProjectPage() {
   const params = useParams<{ slug: string }>();
@@ -29,6 +30,17 @@ export default function ProjectPage() {
     enabled: !!project,
   });
 
+  useSeo({
+    title: project?.title
+      ? `${project.title} | Bryllupsfoto i Norge | Norwed Film`
+      : "Bryllupsprosjekt | Norwed Film",
+    description: project?.description
+      ? project.description
+      : "Se et bryllupsprosjekt fra Norwed Film med bilder og video fra bryllup i Norge.",
+    canonicalPath: params?.slug ? `/project/${params.slug}` : "/",
+    ogType: "article",
+  });
+
   if (isLoading) {
     return (
       <PublicLayout>
@@ -47,9 +59,9 @@ export default function ProjectPage() {
     return (
       <PublicLayout>
         <div className="pt-28 pb-20 text-center">
-          <h1 className="font-serif text-3xl mb-4">Project Not Found</h1>
+          <h1 className="font-serif text-3xl mb-4">Prosjektet ble ikke funnet</h1>
           <Link href="/">
-            <Button variant="outline">Return Home</Button>
+            <Button variant="outline">Tilbake til forsiden</Button>
           </Link>
         </div>
       </PublicLayout>
@@ -63,7 +75,7 @@ export default function ProjectPage() {
           <Link href={project.category === "wedding-video" ? "/portfolio/wedding-video" : "/portfolio/wedding-photo"}>
             <Button variant="ghost" className="mb-6 -ml-4" data-testid="button-back">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Portfolio
+              Tilbake til portefølje
             </Button>
           </Link>
 

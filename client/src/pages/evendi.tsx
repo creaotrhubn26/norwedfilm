@@ -22,6 +22,7 @@ import {
   Globe,
 } from "lucide-react";
 import evendiLogo from "@/assets/images/Evendi_logo_norsk_tagline.png";
+import { useSeo } from "@/hooks/use-seo";
 
 const features = [
   {
@@ -75,6 +76,13 @@ const features = [
 ];
 
 export default function EvendiPage() {
+  useSeo({
+    title: "Evendi | Eventplattform for Norge | Norwed Film",
+    description:
+      "Evendi kobler arrangører, venues og leverandører i Norge. Matching, booking og koordinering i én plattform.",
+    canonicalPath: "/evendi",
+  });
+
   return (
     <PublicLayout>
       <div className="pt-28 pb-20">

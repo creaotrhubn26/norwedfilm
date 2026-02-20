@@ -875,8 +875,8 @@ export async function registerRoutes(
       rss += '<channel>\n';
       rss += '  <title>Norwed Film Blog</title>\n';
       rss += `  <link>${baseUrl}/blog</link>\n`;
-      rss += '  <description>Latest posts from Norwed Film</description>\n';
-      rss += '  <language>en</language>\n';
+      rss += '  <description>Siste artikler fra Norwed Film</description>\n';
+      rss += '  <language>nb-NO</language>\n';
       rss += `  <lastBuildDate>${now}</lastBuildDate>\n`;
       rss += `  <atom:link href="${baseUrl}/feed.xml" rel="self" type="application/rss+xml"/>\n`;
 

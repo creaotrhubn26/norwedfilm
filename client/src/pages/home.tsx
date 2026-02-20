@@ -6,6 +6,7 @@ import { ReviewsSection } from "@/components/public/reviews-section";
 import { ContactForm } from "@/components/public/contact-form";
 import { PartnersSection } from "@/components/public/partners-section";
 import { useQuery } from "@tanstack/react-query";
+import { useSeo } from "@/hooks/use-seo";
 
 type CmsLandingPublic = {
   testimonials?: Array<{
@@ -40,6 +41,13 @@ type CmsLandingPublic = {
 };
 
 export default function HomePage() {
+  useSeo({
+    title: "Bryllupsfotograf i Oslo og Norge | Norwed Film",
+    description:
+      "Norwed Film tilbyr bryllupsfoto og bryllupsvideo i Oslo og hele Norge. Vi dokumenterer dagen deres med tidløse bilder og filmfortelling.",
+    canonicalPath: "/",
+  });
+
   const { data: cmsLanding } = useQuery<CmsLandingPublic>({
     queryKey: ["/api/cms/landing/public"],
   });

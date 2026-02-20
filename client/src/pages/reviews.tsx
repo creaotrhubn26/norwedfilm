@@ -4,8 +4,16 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Star, Quote } from "lucide-react";
 import type { Review } from "@shared/schema";
+import { useSeo } from "@/hooks/use-seo";
 
 export default function ReviewsPage() {
+  useSeo({
+    title: "Anmeldelser | Norwed Film bryllupsfoto i Norge",
+    description:
+      "Les ekte anmeldelser fra par som har valgt Norwed Film til bryllupsfoto og bryllupsvideo i Oslo og Norge.",
+    canonicalPath: "/reviews",
+  });
+
   const { data: reviews, isLoading } = useQuery<Review[]>({
     queryKey: ["/api/reviews"],
   });
@@ -16,10 +24,10 @@ export default function ReviewsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 md:mb-16">
             <h1 className="font-serif text-4xl md:text-5xl font-light mb-4">
-              Customer Reviews
+              Kundeanmeldelser
             </h1>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Real stories from couples who trusted us to capture their special day.
+              Ekte historier fra par som valgte oss til å dokumentere den store dagen.
             </p>
           </div>
 
