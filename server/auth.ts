@@ -23,23 +23,6 @@ export async function setupAuth(app: Express) {
   app.use(getSession());
 }
 
-function hasValidApiKey(rawApiKey: string | undefined): boolean {
-  const configuredApiKey = process.env.NORWEDFILM_API_KEY || process.env.X_API_KEY;
-
-  if (!configuredApiKey || !rawApiKey) {
-    return false;
-  }
-
-  const provided = Buffer.from(rawApiKey, "utf8");
-  const expected = Buffer.from(configuredApiKey, "utf8");
-
-  if (provided.length !== expected.length) {
-    return false;
-  }
-
-  return timingSafeEqual(provided, expected);
-}
-
 let apiKeyCache: { value: string | null; expiresAt: number } = {
   value: null,
   expiresAt: 0,

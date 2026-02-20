@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Loader2, Image as ImageIcon, Film, Link } from "lucide-react";
+import { Plus, Trash2, Loader2, Film } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Media, Project } from "@shared/schema";

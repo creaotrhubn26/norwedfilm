@@ -25,7 +25,7 @@ import {
 import { Plus, Pencil, Trash2, Star, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Review, InsertReview } from "@shared/schema";
+import type { Review } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";

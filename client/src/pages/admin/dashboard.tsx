@@ -6,9 +6,7 @@ import {
   Image, 
   MessageSquare, 
   Star, 
-  TrendingUp,
   Eye,
-  Clock,
   Mail
 } from "lucide-react";
 import { Link } from "wouter";

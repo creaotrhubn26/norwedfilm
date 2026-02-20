@@ -13,7 +13,7 @@
  * - Schedule recurring crawls
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,14 +21,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Loader2, Play, Search, Download, Trash2, RefreshCw, ExternalLink,
+  Loader2, Play, Search, Download, Trash2, RefreshCw,
   AlertTriangle, CheckCircle, XCircle, Clock, Globe, Link2, FileText,
   Eye, ChevronDown, ChevronUp, BarChart3, Settings, Plus, X, Activity,
 } from "lucide-react";
@@ -147,7 +145,6 @@ interface SeoInsightsData {
 
 // ── Main Component ───────────────────────────────────────────────────
 export function CrawlerDashboard() {
-  const { toast } = useToast();
   const [activeView, setActiveView] = useState<"jobs" | "new" | "results" | "seo" | "issues" | "duplicates" | "redirects" | "compare" | "schedules">("jobs");
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [compareJobId, setCompareJobId] = useState<number | null>(null);

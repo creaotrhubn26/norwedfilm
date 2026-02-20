@@ -110,6 +110,7 @@ export default function ProjectPage() {
             <div className="aspect-video mb-12 rounded-md overflow-hidden bg-black relative">
               <iframe
                 src={project.videoUrl}
+                title={`Video av ${project.title}`}
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen

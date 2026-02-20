@@ -262,14 +262,14 @@ export async function startCrawl(config: CrawlConfig): Promise<void> {
     if (config.urlList && config.urlList.length > 0) {
       for (const url of config.urlList) {
         const normalized = normalizeUrl(url, config.targetUrl);
-        if (normalized && !visited.has(normalized)) {
+        if (normalized && shouldCrawl(normalized) && !visited.has(normalized)) {
           visited.add(normalized);
           queue.push({ url: normalized, depth: 0 });
         }
       }
     } else {
       const seedUrl = normalizeUrl(config.targetUrl, config.targetUrl);
-      if (seedUrl) {
+      if (seedUrl && shouldCrawl(seedUrl)) {
         visited.add(seedUrl);
         queue.push({ url: seedUrl, depth: 0 });
       }

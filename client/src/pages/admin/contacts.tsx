@@ -2,7 +2,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/admin/admin-layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -57,21 +56,6 @@ export default function AdminContacts() {
       toast({ title: "Message deleted" });
     },
   });
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "new":
-        return <Badge className="bg-blue-500">New</Badge>;
-      case "read":
-        return <Badge variant="secondary">Read</Badge>;
-      case "replied":
-        return <Badge className="bg-green-500">Replied</Badge>;
-      case "archived":
-        return <Badge variant="outline">Archived</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
 
   return (
     <AdminLayout title="Contact Messages">

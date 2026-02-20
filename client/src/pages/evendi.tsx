@@ -7,7 +7,6 @@ import {
   Target,
   Zap,
   CheckCircle,
-  Users,
   Calendar,
   MessageSquare,
   Building2,

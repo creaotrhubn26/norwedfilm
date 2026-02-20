@@ -1,6 +1,5 @@
 import { db } from "./db";
 import { projects, reviews, heroSlides, siteSettings } from "@shared/schema";
-import { sql } from "drizzle-orm";
 
 export async function seedDatabase() {
   try {

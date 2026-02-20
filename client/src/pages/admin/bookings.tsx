@@ -27,11 +27,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Trash2, Loader2, Calendar, Check, X, Clock } from "lucide-react";
+import { Trash2, Loader2, Calendar, Check, X, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Booking, BlockedDate } from "@shared/schema";
-import { format } from "date-fns";
 
 export default function AdminBookings() {
   const { toast } = useToast();

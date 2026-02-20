@@ -44,7 +44,6 @@ import {
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
-import { format } from "date-fns";
 
 const gallerySchema = z.object({
   title: z.string().min(1, "Title is required"),

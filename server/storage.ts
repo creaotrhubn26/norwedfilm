@@ -24,7 +24,6 @@ import {
   type Review,
   type InsertReview,
   type SiteSetting,
-  type InsertSetting,
   type HeroSlide,
   type InsertHeroSlide,
   type BlogPost,

@@ -1,5 +1,5 @@
 import express, { type Express } from "express";
-import { createServer, type Server } from "http";
+import { type Server } from "http";
 import fs from "fs";
 import path from "path";
 import multer from "multer";
@@ -1078,7 +1078,7 @@ export async function registerRoutes(
   });
 
   // Get published reviews
-  app.get("/api/reviews", async (req, res) => {
+  app.get("/api/reviews", async (_req, res) => {
     try {
       const reviews = await storage.getPublishedReviews();
       res.json(reviews);
@@ -1109,7 +1109,7 @@ export async function registerRoutes(
   });
 
   // Get hero slides
-  app.get("/api/hero-slides", async (req, res) => {
+  app.get("/api/hero-slides", async (_req, res) => {
     try {
       const slides = await storage.getActiveHeroSlides();
       res.json(slides);
@@ -1853,7 +1853,7 @@ export async function registerRoutes(
   // ==========================================
 
   // Dashboard stats
-  app.get("/api/admin/stats", isAuthenticated, async (req, res) => {
+  app.get("/api/admin/stats", isAuthenticated, async (_req, res) => {
     try {
       const stats = await storage.getStats();
       res.json(stats);
@@ -1864,7 +1864,7 @@ export async function registerRoutes(
   });
 
   // Projects CRUD
-  app.get("/api/admin/projects", isAuthenticated, async (req, res) => {
+  app.get("/api/admin/projects", isAuthenticated, async (_req, res) => {
     try {
       const projects = await storage.getProjects();
       res.json(projects);
@@ -1912,7 +1912,7 @@ export async function registerRoutes(
   });
 
   // Media CRUD
-  app.get("/api/admin/media", isAuthenticated, async (req, res) => {
+  app.get("/api/admin/media", isAuthenticated, async (_req, res) => {
     try {
       const media = await storage.getMedia();
       res.json(media);
@@ -1947,7 +1947,7 @@ export async function registerRoutes(
   });
 
   // Pages CRUD
-  app.get("/api/admin/pages", isAuthenticated, async (req, res) => {
+  app.get("/api/admin/pages", isAuthenticated, async (_req, res) => {
     try {
       const pages = await storage.getPages();
       res.json(pages);
@@ -1995,7 +1995,7 @@ export async function registerRoutes(
   });
 
   // Contacts CRUD
-  app.get("/api/admin/contacts", isAuthenticated, async (req, res) => {
+  app.get("/api/admin/contacts", isAuthenticated, async (_req, res) => {
     try {
       const contacts = await storage.getContacts();
       res.json(contacts);
@@ -2041,7 +2041,7 @@ export async function registerRoutes(
   });
 
   // Reviews CRUD
-  app.get("/api/admin/reviews", isAuthenticated, async (req, res) => {
+  app.get("/api/admin/reviews", isAuthenticated, async (_req, res) => {
     try {
       const reviews = await storage.getReviews();
       res.json(reviews);
@@ -2089,7 +2089,7 @@ export async function registerRoutes(
   });
 
   // Hero Slides CRUD
-  app.get("/api/admin/hero-slides", isAuthenticated, async (req, res) => {
+  app.get("/api/admin/hero-slides", isAuthenticated, async (_req, res) => {
     try {
       const slides = await storage.getHeroSlides();
       res.json(slides);
@@ -2137,7 +2137,7 @@ export async function registerRoutes(
   });
 
   // Settings
-  app.get("/api/admin/settings", isAuthenticated, async (req, res) => {
+  app.get("/api/admin/settings", isAuthenticated, async (_req, res) => {
     try {
       const settings = await storage.getSettings();
       res.json(settings);
