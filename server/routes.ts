@@ -2164,6 +2164,20 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/supabase/status", async (_req, res) => {
+    try {
+      const status = await getSupabaseConnectionStatus();
+      res.json(status);
+    } catch (error) {
+      console.error("Error checking public Supabase status:", error);
+      res.status(500).json({
+        connected: false,
+        configured: true,
+        message: "Failed to check Supabase status",
+      });
+    }
+  });
+
   app.get("/api/admin/integrations/supabase/status", isAuthenticated, async (_req, res) => {
     try {
       const status = await getSupabaseConnectionStatus();
